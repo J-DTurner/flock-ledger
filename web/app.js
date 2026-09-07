@@ -3,6 +3,10 @@ const M = FlockMath;
 const money = (n, dp = 0) => n === null || n === undefined || !Number.isFinite(n) ? '—' : '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: dp, maximumFractionDigits: dp });
 const qty = (n, dp = 2) => n === null || n === undefined || !Number.isFinite(n) ? '—' : n.toLocaleString('en-PH', { maximumFractionDigits: dp, minimumFractionDigits: dp });
 const dateLabel = (s) => M.validDate(s) ? new Date(s + 'T12:00:00').toLocaleDateString('en-PH', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date unknown';
+const dateShort = (s) => M.validDate(s) ? new Date(s + 'T12:00:00').toLocaleDateString('en-PH', { day: 'numeric', month: 'long' }) : 'Date unknown';
+function workingDateTitle(date) { const today = M.today(); if (date === today)
+    return { h1: 'Today', eyebrow: 'DAILY LOG' }; if (date < today)
+    return { h1: 'Daily log · ' + dateShort(date), eyebrow: 'PAST DATE' }; return { h1: 'Upcoming · ' + dateShort(date), eyebrow: 'FUTURE DATE' }; }
 const clone = (s) => JSON.parse(JSON.stringify(s));
 const NATIVE = typeof navigator !== 'undefined' && navigator.userAgent.indexOf('FlockLedger/1') >= 0;
 function nativeCall(op, data = '') { return window.prompt('flock:' + op, data); }
@@ -20,7 +24,7 @@ function saveDownload(name, text, mime = 'application/json') { if (NATIVE) {
         throw new Error(result || 'Export was not started.');
     return;
 } const u = URL.createObjectURL(new Blob([text], { type: mime })); const a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 3000); }
-const ICONS = { home: 'M3 11l9-8 9 8M5 10v11h5v-7h4v7h5V10', log: 'M5 3h14v18H5zM9 7h6M9 11h6M9 15h4', chart: 'M4 4v16h17M7 15l4-5 4 2 5-7', flock: 'M5 19v-5a7 7 0 0114 0v5M8 20h8M8 8V5h8v3', save: 'M5 3h12l3 3v15H4V3zM8 3v6h8V3M8 21v-7h8v7', plus: 'M12 5v14M5 12h14', arrow: 'M5 12h14M14 7l5 5-5 5', close: 'M6 6l12 12M18 6L6 18', edit: 'M4 20l4-1 12-12-4-4L4 15v5M14 5l4 4', down: 'M6 9l6 6 6-6', check: 'M5 12l4 4L19 6', feed: 'M5 7h14l2 14H3L5 7zM8 3h8M12 11v6', weight: 'M5 8h14l2 13H3L5 8zM9 8V5a3 3 0 016 0v3', trash: 'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7', info: 'M12 11v6M12 7v.1M22 12a10 10 0 11-20 0 10 10 0 0120 0' };
+const ICONS = { home: 'M3 11l9-8 9 8M5 10v11h5v-7h4v7h5V10', log: 'M5 3h14v18H5zM9 7h6M9 11h6M9 15h4', chart: 'M4 4v16h17M7 15l4-5 4 2 5-7', flock: 'M5 19v-5a7 7 0 0114 0v5M8 20h8M8 8V5h8v3', save: 'M5 3h12l3 3v15H4V3zM8 3v6h8V3M8 21v-7h8v7', plus: 'M12 5v14M5 12h14', arrow: 'M5 12h14M14 7l5 5-5 5', close: 'M6 6l12 12M18 6L6 18', edit: 'M4 20l4-1 12-12-4-4L4 15v5M14 5l4 4', down: 'M6 9l6 6 6-6', check: 'M5 12l4 4L19 6', feed: 'M5 7h14l2 14H3L5 7zM8 3h8M12 11v6', weight: 'M5 8h14l2 13H3L5 8zM9 8V5a3 3 0 016 0v3', trash: 'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7', removal: 'M15 3h6v18h-6M10 17l-5-5 5-5M5 12h12', info: 'M12 11v6M12 7v.1M22 12a10 10 0 11-20 0 10 10 0 0120 0' };
 const TYPELABEL = { feed: 'Feed purchase', usage: 'Feed used', weigh: 'Weighing', count: 'Live count', loss: 'Bird loss', harvest: 'Harvest', expense: 'Expense', budget: 'Budget only', openingUsage: 'Historical feed use', note: 'Note' };
 const ACTION_META = { feed: { title: 'Buy feed', save: 'Save purchase', eyebrow: 'FEED PURCHASE' }, usage: { title: 'Use feed', save: 'Save feed use', eyebrow: 'FEED USE' }, weigh: { title: 'Weigh birds', save: 'Save weighing', eyebrow: 'WEIGHING' }, count: { title: 'Count birds', save: 'Save count', eyebrow: 'LIVE COUNT' }, loss: { title: 'Loss / removal', save: 'Save removal', eyebrow: 'REMOVAL' }, harvest: { title: 'Harvest', save: 'Save harvest', eyebrow: 'HARVEST' }, expense: { title: 'Expense', save: 'Save expense', eyebrow: 'EXPENSE' }, budget: { title: 'Feed budget', save: 'Save budget', eyebrow: 'BUDGET' }, openingUsage: { title: 'Historical feed use', save: 'Save historical use', eyebrow: 'HISTORICAL USE' }, note: { title: 'Note', save: 'Save note', eyebrow: 'NOTE' } };
 const CHOOSER = [['usage', 'Use feed'], ['feed', 'Buy feed'], ['weigh', 'Weigh birds'], ['count', 'Count birds'], ['loss', 'Loss / removal'], ['expense', 'Expense'], ['harvest', 'Harvest'], ['note', 'Note'], ['budget', 'Feed budget'], ['openingUsage', 'Historical feed use']];
@@ -71,13 +75,13 @@ function freshDraft(cmd) {
 }
 function draftDirty(cmd, s) {
     const f = freshDraft(cmd);
-    return ['name', 'phase', 'cost', 'kg', 'qtyUnknown', 'lotId', 'avgKg', 'minKg', 'maxKg', 'sampleN', 'weights', 'count', 'liveKg', 'dressedKg', 'revenue', 'homeKg', 'note', 'sacks', 'packKg'].some(k => { var _a, _b; return String((_a = s[k]) !== null && _a !== void 0 ? _a : '') !== String((_b = f[k]) !== null && _b !== void 0 ? _b : ''); }) || (s.extraLots && s.extraLots.length);
+    return ['name', 'phase', 'cost', 'kg', 'qtyUnknown', 'lotId', 'avgKg', 'minKg', 'maxKg', 'sampleN', 'weights', 'count', 'liveKg', 'dressedKg', 'revenue', 'homeKg', 'note', 'sacks', 'packKg', 'date', 'startDate', 'weighMode', 'weighUnit', 'qtyMode', 'periodMode', 'dest', 'method'].some(k => { var _a, _b; return String((_a = s[k]) !== null && _a !== void 0 ? _a : '') !== String((_b = f[k]) !== null && _b !== void 0 ? _b : ''); }) || (s.extraLots && s.extraLots.length);
 }
 function LineChart({ series, title, unit = 'kg', xLabel = 'Days since purchase', floorZero = false }) {
     const all = series.reduce((a, s) => a.concat(s.points), []).filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
     if (!all.length)
         return React.createElement(Empty, { title: "No chart data yet", text: "Add a dated record to begin." });
-    const W = 720, H = 285, L = 64, R = 25, T = 20, B = 46;
+    const W = 720, H = 220, L = 8, R = 8, T = 12, B = 12;
     let minX = Math.min(...all.map((p) => p.x)), maxX = Math.max(...all.map((p) => p.x));
     if (minX === maxX) {
         minX -= 1;
@@ -92,24 +96,27 @@ function LineChart({ series, title, unit = 'kg', xLabel = 'Days since purchase',
         maxY = minY + 1;
     const x = (v) => L + (v - minX) / (maxX - minX) * (W - L - R), y = (v) => H - B - (v - minY) / (maxY - minY) * (H - T - B);
     const yfmt = (n) => unit === '₱/kg' ? '₱' + n.toFixed(0) : n.toFixed(maxY < 5 ? 1 : 0);
+    const yTicks = [0, 1, 2, 3, 4].map(i => minY + (maxY - minY) * i / 4);
+    const xTicks = [0, 1, 2, 3, 4, 5].map(i => minX + (maxX - minX) * i / 5);
     return React.createElement("div", { className: "chart" },
         React.createElement("div", { className: "chart-legend" }, series.map((s, i) => React.createElement("span", { key: i },
             React.createElement("i", { className: s.dash ? 'dashed' : '', style: { borderColor: s.color } }),
             s.label))),
-        React.createElement("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": title + '; ' + unit + ' by ' + xLabel },
-            [0, 1, 2, 3, 4].map(i => { const val = minY + (maxY - minY) * i / 4; return React.createElement("g", { key: i },
-                React.createElement("line", { x1: L, x2: W - R, y1: y(val), y2: y(val), stroke: "#e7e9e2" }),
-                React.createElement("text", { x: L - 11, y: y(val) + 4, textAnchor: "end", className: "axis-text" }, yfmt(val))); }),
-            [0, 1, 2, 3, 4, 5].map(i => { const val = minX + (maxX - minX) * i / 5; return React.createElement("g", { key: i },
-                React.createElement("text", { x: x(val), y: H - B + 22, textAnchor: "middle", className: "axis-text" }, Math.round(val))); }),
-            React.createElement("line", { x1: L, x2: W - R, y1: H - B, y2: H - B, stroke: "#bac2b5" }),
-            series.map((s, i) => React.createElement("g", { key: i },
-                s.connect !== false && s.points.length > 1 && React.createElement("polyline", { fill: "none", stroke: s.color, strokeWidth: "2.7", strokeDasharray: s.dash ? '7 6' : undefined, points: s.points.map((p) => `${x(p.x)},${y(p.y)}`).join(' ') }),
-                " ",
-                s.points.filter((p, j) => s.markAll || s.points.length < 5 || j === 0 || j === s.points.length - 1).map((p, j) => React.createElement("circle", { key: j, cx: x(p.x), cy: y(p.y), r: s.connect === false ? 5 : 3, fill: s.open ? '#fff' : s.color, stroke: s.color, strokeWidth: "2" },
-                    React.createElement("title", null, `Day ${p.x}: ${unit === '₱/kg' ? money(p.y, 2) : qty(p.y) + ' ' + unit}`))))),
-            React.createElement("text", { x: (W + L - R) / 2, y: H - 3, textAnchor: "middle", className: "axis-text" }, xLabel)),
+        React.createElement("div", { className: "chart-plot" },
+            React.createElement("div", { className: "chart-y", "aria-hidden": "true" }, yTicks.slice().reverse().map((val, i) => React.createElement("span", { key: i }, yfmt(val)))),
+            React.createElement("div", { className: "chart-svg-wrap" },
+                React.createElement("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": title + '; ' + unit + ' by ' + xLabel, preserveAspectRatio: "none" },
+                    yTicks.map((val, i) => React.createElement("line", { key: i, x1: L, x2: W - R, y1: y(val), y2: y(val), stroke: "#e7e9e2" })),
+                    React.createElement("line", { x1: L, x2: W - R, y1: H - B, y2: H - B, stroke: "#bac2b5" }),
+                    series.map((s, i) => React.createElement("g", { key: i },
+                        s.connect !== false && s.points.length > 1 && React.createElement("polyline", { fill: "none", stroke: s.color, strokeWidth: "2.7", strokeDasharray: s.dash ? '7 6' : undefined, points: s.points.map((p) => `${x(p.x)},${y(p.y)}`).join(' ') }),
+                        " ",
+                        s.points.filter((p, j) => s.markAll || s.points.length < 5 || j === 0 || j === s.points.length - 1).map((p, j) => React.createElement("circle", { key: j, cx: x(p.x), cy: y(p.y), r: s.connect === false ? 5 : 3, fill: s.open ? '#fff' : s.color, stroke: s.color, strokeWidth: "2" },
+                            React.createElement("title", null, `Day ${p.x}: ${unit === '₱/kg' ? money(p.y, 2) : qty(p.y) + ' ' + unit}`)))))),
+                React.createElement("div", { className: "chart-x", "aria-hidden": "true" }, xTicks.map((val, i) => React.createElement("span", { key: i }, Math.round(val)))))),
         React.createElement("small", { className: "chart-caption" },
+            xLabel,
+            ". ",
             unit === '₱/kg' ? 'Focused vertical scale for comparing cost differences. ' : '',
             "Exact values are shown in the records or comparison table below."));
 }
@@ -168,7 +175,7 @@ function ActionChooser({ onPick, onCancel }) {
                 React.createElement("h2", null, "Choose an action")),
             React.createElement("button", { type: "button", className: "icon-btn", "aria-label": "Close form", onClick: onCancel },
                 React.createElement(Icon, { name: "close" }))),
-        React.createElement("p", { className: "muted small-text" }, "Named tasks open the matching form. This chooser is only for when the task is not already known."),
+        React.createElement("p", { className: "muted small-text" }, "Choose an action to record."),
         React.createElement("div", { className: "chooser-grid" }, CHOOSER.map(([action, label]) => React.createElement("button", { key: action, type: "button", className: "chooser-btn", onClick: () => onPick(action) }, label))));
 }
 class TaskForm extends React.Component {
@@ -178,7 +185,7 @@ class TaskForm extends React.Component {
             this.props.onDraft(this.state); };
         this.set = (k, v) => this.setState({ [k]: v, error: '' }, this.emit);
         this.input = (k, opts = {}) => React.createElement("input", Object.assign({ type: "number", inputMode: "decimal", step: "any", min: "0", value: this.state[k], onChange: e => this.set(k, e.target.value) }, opts));
-        this.endDate = () => this.state.date || this.props.command.date || M.today();
+        this.endDate = () => this.state.date || '';
         this.resolvedKg = () => { const s = this.state; if (s.qtyUnknown)
             return null; if (s.qtyMode === 'sacks') {
             const a = Number(s.sacks), p = Number(s.packKg);
@@ -198,10 +205,11 @@ class TaskForm extends React.Component {
             }
             if (cmd.action === 'usage') {
                 const rows = [{ lotId: s.lotId, kg: n('kg') }].concat((s.extraLots || []).filter((r) => r.lotId && r.kg !== '').map((r) => ({ lotId: r.lotId, kg: Number(r.kg) })));
-                return rows.map((r, i) => (Object.assign(Object.assign({}, base), { id: i === 0 ? base.id : M.uid(), type: 'usage', kg: r.kg, lotId: r.lotId, startDate: s.startDate, date: this.endDate() })));
+                return rows.map((r, i) => (Object.assign(Object.assign({}, base), { id: i === 0 ? base.id : M.uid(), type: 'usage', kg: r.kg, lotId: r.lotId, startDate: s.startDate || null, date: s.date || null })));
             }
             if (cmd.action === 'weigh') {
-                Object.assign(base, M.serializeWeigh(s.weighMode, { avgKg: s.weighUnit === 'g' && s.avgKg !== '' ? String(Number(s.avgKg) / 1000) : s.avgKg, minKg: s.weighUnit === 'g' && s.minKg !== '' ? String(Number(s.minKg) / 1000) : s.minKg, maxKg: s.weighUnit === 'g' && s.maxKg !== '' ? String(Number(s.maxKg) / 1000) : s.maxKg, sampleN: s.sampleN, weights: s.weighUnit === 'g' ? s.weights.split(/[\s,;]+/).filter(Boolean).map((w) => String(Number(w) / 1000)).join(', ') : s.weights }));
+                const n = M.normalizeWeighDraft(s);
+                Object.assign(base, M.serializeWeigh(n.weighMode, n));
             }
             if (['count', 'loss', 'harvest'].includes(cmd.action))
                 base.count = n('count');
@@ -218,7 +226,9 @@ class TaskForm extends React.Component {
             return [base];
         };
         this.save = (ev, andAnother = false) => { ev.preventDefault(); try {
-            this.props.onSave(this.build(), { andAnother, command: this.props.command });
+            if (['weigh', 'count', 'loss', 'harvest', 'usage'].includes(this.props.command.action) && !M.validDate(this.state.date))
+                throw new Error('Date is required.');
+            this.props.onSave(this.build(), { andAnother, command: this.props.command, packKg: Number(this.state.packKg) || undefined });
         }
         catch (err) {
             this.setState({ error: err.message });
@@ -274,10 +284,15 @@ class TaskForm extends React.Component {
                     " \u00B7 Use this price")));
     }
     renderUsage(batch) {
+        var _a, _b;
         const s = this.state, end = this.endDate(), lots = M.eligibleLots(batch, end, this.props.command.event);
         const locked = !!this.props.command.lotId && !this.props.command.event;
         const selected = lots.find((p) => p.id === s.lotId) || batch.events.find((e) => e.id === s.lotId);
-        const bal = s.lotId ? M.lotBalances(batch, s.lotId, end) : null;
+        const previewKg = s.kg === '' ? NaN : Number(s.kg);
+        const previewEvent = s.lotId && Number.isFinite(previewKg) && previewKg > 0 ? { id: ((_a = this.props.command.event) === null || _a === void 0 ? void 0 : _a.id) || this.props.command.eventId || 'preview-usage', type: 'usage', lotId: s.lotId, kg: previewKg, startDate: s.startDate, date: end, createdAt: ((_b = this.props.command.event) === null || _b === void 0 ? void 0 : _b.createdAt) || new Date().toISOString(), note: s.note || '' } : null;
+        const candidate = previewEvent ? M.candidateBatch(batch, [previewEvent]) : batch;
+        const bal = s.lotId ? M.lotBalances(candidate, s.lotId, end) : null;
+        const afterAll = s.lotId && previewEvent ? M.lotBalances(candidate, s.lotId) : null;
         const prev = batch.events.filter((e) => e.type === 'usage').sort((a, c) => (c.date || '').localeCompare(a.date || ''))[0];
         const similar = s.lotId && batch.events.find((e) => e.type === 'usage' && e.lotId === s.lotId && e.date === end && e.startDate === s.startDate && (!this.props.command.event || e.id !== this.props.command.event.id));
         return React.createElement(React.Fragment, null,
@@ -325,19 +340,19 @@ class TaskForm extends React.Component {
             React.createElement(Field, { label: "Kilograms used in this period", hint: "Include feed lost at the feeder. Unused stock stays in inventory." }, this.input('kg', { required: true })),
             bal && React.createElement("div", { className: "wide live-preview" },
                 React.createElement("div", null,
-                    "Balance at this date: ",
+                    "Stock recorded at this date: ",
                     React.createElement("strong", null,
                         qty(bal.balanceAtDate),
                         " kg")),
                 React.createElement("div", null,
-                    "Remaining after all recorded usage: ",
+                    "Quantity still available after all recorded usage: ",
                     React.createElement("strong", null,
-                        qty(bal.remainingAfterAll),
+                        qty((afterAll || bal).remainingAfterAll),
                         " kg")),
-                Number(s.kg) > 0 && selected && selected.kg && React.createElement("div", null,
+                afterAll && React.createElement("div", null,
                     "Recorded stock after this entry: ",
                     React.createElement("strong", null,
-                        qty((selected.kg === null ? null : selected.kg - M.lotBalances(batch, s.lotId).usedAll - (this.props.command.event ? 0 : Number(s.kg)))),
+                        qty(afterAll.remainingAfterAll),
                         " kg"))),
             similar && s.overlap !== 'additional' && React.createElement("div", { className: "wide" },
                 React.createElement(Note, { tone: "warn" },
@@ -360,7 +375,7 @@ class TaskForm extends React.Component {
                     React.createElement("input", { type: "number", min: "0", step: "any", value: row.kg, onChange: e => { const extraLots = s.extraLots.slice(); extraLots[i] = Object.assign(Object.assign({}, row), { kg: e.target.value }); this.setState({ extraLots }, this.emit); } })))));
     }
     renderWeigh() {
-        const s = this.state, parsed = s.weighMode === 'individual' ? M.parseWeightList(s.weights) : null;
+        const s = this.state, normalized = s.weighMode === 'individual' ? M.normalizeWeighDraft(s) : null, parsed = normalized ? M.parseWeightList(normalized.weights) : null;
         const unit = s.weighUnit === 'g' ? 'g' : 'kg';
         return React.createElement(React.Fragment, null,
             React.createElement("div", { className: "wide mode-tabs", role: "tablist", "aria-label": "Weighing mode" },
@@ -370,15 +385,15 @@ class TaskForm extends React.Component {
             React.createElement(Field, { label: "Date" },
                 React.createElement("input", { type: "date", value: s.date, min: this.props.batch.placementDate, onChange: e => this.set('date', e.target.value) })),
             React.createElement(Field, { label: "Unit" },
-                React.createElement("select", { value: s.weighUnit, onChange: e => this.set('weighUnit', e.target.value) },
+                React.createElement("select", { "aria-label": "Unit", value: s.weighUnit, onChange: e => this.set('weighUnit', e.target.value) },
                     React.createElement("option", { value: "kg" }, "Kilograms"),
                     React.createElement("option", { value: "g" }, "Grams (converted to kg)"))),
             s.weighMode === 'average' && React.createElement(React.Fragment, null,
                 React.createElement(Field, { label: `Average live weight (${unit})` }, this.input('avgKg', { required: true })),
                 React.createElement(Field, { label: "Number of birds weighed", hint: "Do not reuse a previous sample size as if it were observed again." }, this.input('sampleN', { step: 1, required: true }))),
             s.weighMode === 'individual' && React.createElement(React.Fragment, null,
-                React.createElement(Field, { label: "Individual weights (kg)", wide: true, hint: "Separate birds with commas, spaces, or new lines. A period is the decimal mark." },
-                    React.createElement("textarea", { rows: 3, placeholder: "0.98, 1.04, 1.10, 0.95", value: s.weights, onChange: e => this.set('weights', e.target.value) })),
+                React.createElement(Field, { label: `Individual weights (${unit})`, wide: true, hint: "Separate birds with commas, spaces, or new lines. A period is the decimal mark." },
+                    React.createElement("textarea", { rows: 3, placeholder: unit === 'g' ? '1000, 1100, 1200' : '0.98, 1.04, 1.10, 0.95', value: s.weights, onChange: e => this.set('weights', e.target.value) })),
                 React.createElement("div", { className: "wide live-preview" }, parsed && !parsed.error && parsed.sampleN ? React.createElement(React.Fragment, null,
                     React.createElement("div", null,
                         "Birds entered: ",
@@ -431,7 +446,11 @@ class TaskForm extends React.Component {
             predicted !== null && live.confirmed === false && React.createElement("p", { className: "muted small-text" }, "Saving this count will become the verified live snapshot for later removals."));
     }
     renderLoss(batch) {
-        const s = this.state, live = M.headcount(batch, this.endDate()), after = s.count === '' ? null : live.count - Number(s.count);
+        var _a, _b;
+        const s = this.state, previewCount = s.count === '' ? NaN : Number(s.count);
+        const previewEvent = Number.isFinite(previewCount) ? { id: ((_a = this.props.command.event) === null || _a === void 0 ? void 0 : _a.id) || this.props.command.eventId || 'preview-loss', type: 'loss', count: previewCount, date: this.endDate(), createdAt: ((_b = this.props.command.event) === null || _b === void 0 ? void 0 : _b.createdAt) || new Date().toISOString(), note: s.note || '' } : null;
+        const candidate = previewEvent ? M.candidateBatch(batch, [previewEvent]) : batch;
+        const live = M.headcount(batch, this.endDate()), after = previewEvent ? M.headcount(candidate, this.endDate()).count : null;
         const same = batch.events.filter((e) => ['count', 'loss', 'harvest'].includes(e.type) && e.date === s.date);
         return React.createElement(React.Fragment, null,
             React.createElement(Field, { label: "Date" },
@@ -487,8 +506,13 @@ class TaskForm extends React.Component {
                     React.createElement(Icon, { name: "close" }))),
             React.createElement("div", { className: "entry-context" },
                 React.createElement("span", null, bname),
-                React.createElement("span", null, dateLabel(s.date || cmd.date))),
-            cmd.convert && React.createElement(Note, null, "The budget will be replaced by this purchase when you save. Enter the actual kilograms and amount paid."),
+                React.createElement("span", null, s.date ? dateLabel(s.date) : (cmd.event ? 'Date unknown' : 'Date required'))),
+            cmd.convert && React.createElement(Note, null,
+                "Planned budget: ",
+                money(cmd.convert.cost),
+                ". This plan will be replaced by the purchase you save. Enter the actual kilograms and amount paid, or ",
+                React.createElement("button", { type: "button", className: "text-btn", onClick: () => this.set('cost', String(cmd.convert.cost)) }, "adopt the planned amount"),
+                "."),
             React.createElement("div", { className: "form-grid" },
                 cmd.action === 'feed' && this.renderFeed(batch),
                 cmd.action === 'usage' && this.renderUsage(batch),
@@ -561,12 +585,10 @@ class App extends React.Component {
         this.openChooser = () => this.setState({ modal: { kind: 'chooser' }, pendingDraft: null });
         this.saveRecords = (records, opts) => {
             const cmd = opts.command, batchId = cmd.batchId;
+            const snapshot = clone(this.state.data);
             const d = clone(this.state.data);
             const next = M.applyEvents(d, batchId, records, cmd.convert ? [cmd.convert.id] : []);
-            storeWrite(next);
-            const b = next.batches.find((x) => x.id === batchId);
             const last = records[0];
-            const msg = this.consequence(records, b);
             const ui = Object.assign({}, (next.settings.ui || {}));
             ui.drafts = Object.assign({}, (ui.drafts || {}));
             delete ui.drafts[draftKey(cmd)];
@@ -577,7 +599,9 @@ class App extends React.Component {
             next.settings.ui = ui;
             M.validateState(next);
             storeWrite(next);
-            this.setState({ data: next, storageError: '', lastSave: { events: records, batchId, message: msg }, pendingDraft: null });
+            const b = next.batches.find((x) => x.id === batchId);
+            const msg = this.consequence(records, b);
+            this.setState({ data: next, storageError: '', lastSave: { events: records, batchId, message: msg, snapshot }, pendingDraft: null });
             if (opts.andAnother) {
                 const again = { action: cmd.action, batchId, date: cmd.date, lotId: cmd.action === 'usage' ? cmd.lotId || last.lotId : undefined };
                 if (cmd.action === 'feed')
@@ -587,6 +611,19 @@ class App extends React.Component {
             else
                 this.setState({ modal: null });
             this.toast(msg);
+        };
+        this.undoLastChange = () => {
+            const ls = this.state.lastSave;
+            if (!ls || !ls.snapshot)
+                return;
+            try {
+                storeWrite(ls.snapshot);
+                this.setState({ data: ls.snapshot, lastSave: null, storageError: '' });
+                this.toast('Last change undone');
+            }
+            catch (e) {
+                this.toast(e.message);
+            }
         };
         this.consequence = (records, b) => {
             const e = records[0];
@@ -606,17 +643,88 @@ class App extends React.Component {
                 return `Recorded ${e.count} birds removed`;
             return TYPELABEL[e.type] + ' saved';
         };
-        this.deleteRecord = (event) => { if (!window.confirm(`Delete this ${TYPELABEL[event.type].toLowerCase()}? This can change stock and costs.`))
-            return; try {
-            this.mutate((d, b) => { b.events = b.events.filter((e) => e.id !== event.id); }, 'Record deleted');
-            this.setState({ lastSave: null });
-        }
-        catch (e) {
-            this.toast(e.message);
-        } };
+        this.deleteRecord = (event) => {
+            const name = (event.name || TYPELABEL[event.type] || 'record').toLowerCase();
+            const extra = event.type === 'usage' ? ' Recorded stock and production cost will change.' : event.type === 'feed' ? ' Usage entries that depend on this purchase will block deletion.' : ' This can change stock and costs.';
+            if (!window.confirm(`Delete this ${name}?${extra}`))
+                return;
+            try {
+                this.mutate((d, b) => { b.events = b.events.filter((e) => e.id !== event.id); }, 'Record deleted');
+                this.setState({ lastSave: null });
+            }
+            catch (e) {
+                this.toast(e.message);
+            }
+        };
         this.capital = () => M.sum(this.state.data.settings.capital.map((a) => a.cost));
         this.projection = () => M.forecast(this.b(), this.state.scenarioDraft || this.b().forecast, this.capital(), this.state.data.settings.recoveryBatches);
-        this.switchTab = (tab) => { this.setState({ tab }); window.scrollTo(0, 0); };
+        this.switchTab = (tab) => { this.setState({ tab, morePage: tab === 'more' && this.state.tab === 'more' ? this.state.morePage : 'menu' }); window.scrollTo(0, 0); };
+        this.openMore = (page) => { this.setState({ tab: 'more', morePage: page }); window.scrollTo(0, 0); };
+        this.workingDateBar = () => {
+            const date = this.state.selectedDate || M.today(), away = date !== M.today();
+            return React.createElement("div", { className: "working-date" },
+                React.createElement(Field, { label: "Working date" },
+                    React.createElement("input", { type: "date", "aria-label": "Selected date", value: date, onChange: e => this.setState({ selectedDate: e.target.value }) })),
+                away && React.createElement("button", { type: "button", className: "btn secondary", onClick: () => this.setState({ selectedDate: M.today() }) }, "Return to today"));
+        };
+        this.renderLotCard = (p, date, opts = {}) => {
+            const usable = p.kg !== null && p.remaining !== null && p.remaining > 0.00001;
+            const later = M.lotBalances(this.b(), p.id);
+            const showSplit = later && p.remaining !== null && later.remainingAfterAll !== null && Math.abs((p.remaining || 0) - (later.remainingAfterAll || 0)) > 0.00001;
+            return React.createElement("section", { className: "card lot-card", key: p.id },
+                React.createElement("h3", null, p.name),
+                React.createElement("p", null,
+                    p.phase,
+                    " \u00B7 ",
+                    dateLabel(p.date)),
+                React.createElement("div", { className: "detail-grid" },
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Recorded remaining"),
+                        React.createElement("strong", null,
+                            qty(p.remaining),
+                            " kg")),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Purchased"),
+                        React.createElement("strong", null,
+                            qty(p.kg),
+                            " kg")),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Used"),
+                        React.createElement("strong", null,
+                            qty(p.used),
+                            " kg")),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Recorded \u20B1/kg"),
+                        React.createElement("strong", null, money(p.price, 2)))),
+                showSplit && React.createElement("p", { className: "muted small-text" },
+                    "Stock recorded at ",
+                    dateLabel(date),
+                    ": ",
+                    qty(p.remaining),
+                    " kg. Still available after all recorded usage: ",
+                    qty(later.remainingAfterAll),
+                    " kg."),
+                p.kg === null && React.createElement(Note, { tone: "warn" }, "Quantity unknown \u2014 unavailable for lot-based feed-use logging."),
+                React.createElement("div", { className: "button-row" },
+                    p.kg !== null && React.createElement("button", { className: "btn secondary", disabled: !usable, onClick: () => usable && this.openAction({ action: 'usage', lotId: p.id, date }) }, "Use feed"),
+                    React.createElement("button", { className: "btn secondary", onClick: () => this.openAction({ action: 'feed', product: { name: p.name, phase: p.phase, lastKg: p.kg, lastCost: p.cost, lastDate: p.date }, date }) }, "Buy again"),
+                    React.createElement("button", { className: "text-btn", onClick: () => this.openAction({ action: 'feed', event: p }) }, "Edit purchase")));
+        };
+        this.recordMatches = (e, b) => {
+            const st = this.state;
+            if (st.filter !== 'all' && e.type !== st.filter)
+                return false;
+            if (st.recordFrom && (!e.date || e.date < st.recordFrom))
+                return false;
+            if (st.recordTo && (!e.date || e.date > st.recordTo))
+                return false;
+            const q = (st.recordSearch || '').trim().toLowerCase();
+            if (!q)
+                return true;
+            const lot = b.events.find((x) => x.id === e.lotId);
+            const hay = [e.name, e.note, lot && lot.name, TYPELABEL[e.type], e.phase].filter(Boolean).join(' ').toLowerCase();
+            return hay.includes(q);
+        };
         this.forecastInput = (key, label, hint, step = 'any') => { const p = this.state.scenarioDraft || this.b().forecast; return React.createElement(Field, { label: label, hint: hint },
             React.createElement("input", { type: "number", min: "0", step: step, inputMode: "decimal", value: p[key] === null ? '' : p[key], onChange: e => this.setState({ scenarioDraft: Object.assign(Object.assign({}, p), { [key]: e.target.value === '' ? null : Number(e.target.value) }) }) })); };
         this.saveScenario = () => { try {
@@ -671,17 +779,20 @@ class App extends React.Component {
         catch (e) {
             error = e.message;
         }
-        this.state = { data, tab: 'today', modal: null, toast: '', filter: 'all', scenarioDraft: null, selectedDay: null, importText: '', importError: '', storageError: error, loadError: !data ? error : '', capitalDraft: { name: '', cost: '', date: '' }, selectedDate: M.today(), pendingDraft: null, lastSave: null };
+        this.state = { data, tab: 'today', morePage: 'menu', modal: null, toast: '', filter: 'all', recordSearch: '', recordFrom: '', recordTo: '', recordsShown: 50, scenarioDraft: null, selectedDay: null, showModelOverlay: false, forecastProposal: null, forecastStartReview: null, scenarioProvenance: null, importText: '', importError: '', storageError: error, loadError: !data ? error : '', capitalDraft: { name: '', cost: '', date: '' }, selectedDate: M.today(), pendingDraft: null, lastSave: null };
     }
     componentDidMount() { window.checkPendingImport = () => { if (NATIVE) {
         const text = nativeCall('take-import');
         if (text)
             window.receiveNativeBackup(text);
-    } }; window.receiveNativeBackup = (text) => { this.setState({ tab: 'backup', importText: text, importError: '' }); }; window.nativeNotice = (s) => this.toast(s); window.nativeBack = () => { if (this.state.modal) {
+    } }; window.receiveNativeBackup = (text) => { const hasBatches = !!(this.state.data && this.state.data.batches && this.state.data.batches.length); this.setState({ tab: hasBatches ? 'more' : 'backup', morePage: 'backup', importText: text, importError: '' }); }; window.nativeNotice = (s) => this.toast(s); window.nativeBack = () => { if (this.state.modal) {
         this.dismissEditor();
         return true;
+    } if (this.state.tab === 'more' && this.state.morePage !== 'menu') {
+        this.setState({ morePage: 'menu' });
+        return true;
     } if (this.state.tab !== 'today') {
-        this.setState({ tab: 'today' });
+        this.setState({ tab: 'today', morePage: 'menu' });
         return true;
     } return false; }; window.addEventListener('keydown', this.keydown); window.checkPendingImport(); }
     componentWillUnmount() { window.removeEventListener('keydown', this.keydown); }
@@ -693,36 +804,46 @@ class App extends React.Component {
             React.createElement("strong", null, ls.message),
             React.createElement("div", { className: "button-row" },
                 ls.events.map((e) => React.createElement("button", { key: e.id, type: "button", className: "text-btn", onClick: () => this.openAction({ action: e.type, event: e }) }, "Edit")),
-                React.createElement("button", { type: "button", className: "text-btn", onClick: () => this.deleteRecord(ls.events[0]) }, "Undo"),
+                ls.snapshot && React.createElement("button", { type: "button", className: "text-btn", onClick: this.undoLastChange }, "Undo last change"),
                 ls.events[0].type === 'feed' && ls.events[0].kg !== null && React.createElement("button", { type: "button", className: "text-btn", onClick: () => this.openAction({ action: 'usage', lotId: ls.events[0].id, date: this.state.selectedDate }) }, "Log use from this purchase")));
     }
     renderToday() {
         const b = this.b(), date = this.state.selectedDate || M.today(), s = M.summary(b, date), perf = M.recentPerformance(b, date), f = this.projection();
-        const pts = M.weighSeriesPoints(b), live = M.headcount(b, date), age = M.days(b.placementDate, date);
+        const heading = workingDateTitle(date), preStart = M.validDate(date) && date < b.placementDate;
+        const pts = M.weighSeriesPoints(b).filter((w) => !w.date || w.date <= date), live = M.headcount(b, date), age = M.days(b.placementDate, date);
         const series = [{ label: 'Measured sample', color: '#395a43', markAll: true, points: pts.filter((w) => w.method === 'measured') }, { label: 'Rough estimate', color: '#a57636', connect: false, open: true, points: pts.filter((w) => w.method === 'estimate') }];
-        if (f.rows.length)
-            series.push({ label: 'Editable scenario, not a prediction', color: '#788570', dash: true, points: f.rows.map((r) => ({ x: r.day, y: r.weight })) });
+        if (this.state.showModelOverlay && f.rows.length)
+            series.push({ label: 'Editable scenario, not a prediction', color: '#788570', dash: true, points: f.rows.filter((r) => r.date <= date).map((r) => ({ x: r.day, y: r.weight })) });
         const attention = M.attentionItems(b, date);
         const todayEntries = b.events.filter((e) => e.date === date).sort((a, c) => (c.createdAt || '').localeCompare(a.createdAt || ''));
-        const measured = s.weigh && s.weigh.method === 'measured', estimate = M.latestWeigh(b, date, false);
-        const latestEstimate = b.events.filter((e) => e.type === 'weigh' && e.method === 'estimate' && e.date && e.date <= date).sort((a, c) => c.date.localeCompare(a.date))[0];
+        const latestMeasured = M.latestWeigh(b, date, true);
+        const latestAny = M.latestWeigh(b, date, false);
+        const latestEstimate = latestAny && latestAny.method === 'estimate' ? latestAny : null;
+        const unknownLots = (s.inventoryIncomplete ? b.events.filter((e) => e.type === 'feed' && e.kg === null && (!e.date || e.date <= date)).length : 0);
+        const birdValue = preStart ? '—' : (live.confirmed ? live.count + ' birds' : 'Not counted');
+        const birdSub = preStart ? 'Batch not started on this date' : (live.confirmed ? `Counted ${dateLabel(live.confirmedOn)}, less later recorded removals` : `${b.initialBirds} purchased, less recorded removals`);
+        const weightMain = latestMeasured ? qty(latestMeasured.avgKg) + ' kg' : (latestEstimate ? qty(latestEstimate.avgKg) + ' kg' : 'Not recorded');
+        const weightSub = latestMeasured ? `Measured average · ${dateLabel(latestMeasured.date)}` : (latestEstimate ? `Estimate · ${dateLabel(latestEstimate.date)}` : 'No weighing recorded');
+        const stockValue = preStart ? '—' : (!b.events.some((e) => e.type === 'feed' && (!e.date || e.date <= date)) ? 'No feed purchases recorded' : qty(s.inventoryKg) + ' kg known remaining');
+        const stockSub = preStart ? 'Batch not started on this date' : (unknownLots ? `${unknownLots} purchase${unknownLots === 1 ? ' has' : 's have'} an unknown quantity` : (s.inventoryKg === 0 ? '0 kg recorded remaining' : 'Known remaining kilograms'));
         return React.createElement(React.Fragment, null,
+            React.createElement("div", { className: "batch-context" },
+                React.createElement("div", null,
+                    React.createElement("span", { className: "eyebrow" }, "BATCH"),
+                    React.createElement("strong", null, b.name),
+                    React.createElement("p", null,
+                        preStart ? 'Batch not started on this date' : (age < 0 ? 'Purchase is in the future' : `Day ${age} since purchase`),
+                        b.placementEstimated ? ' · Purchase date approximate' : '',
+                        " \u00B7 ",
+                        dateLabel(b.placementDate))),
+                React.createElement("button", { className: "btn secondary", onClick: () => this.setState({ modal: { kind: 'batch', batch: b } }) }, "Edit batch")),
             React.createElement("div", { className: "page-title" },
                 React.createElement("div", null,
-                    React.createElement("span", { className: "eyebrow" }, "TODAY"),
-                    React.createElement("h1", null, b.name),
-                    React.createElement("p", null,
-                        age < 0 ? 'Purchase is in the future' : `Day ${age} since purchase`,
-                        " \u00B7 ",
-                        b.placementEstimated ? 'Approximate purchase date' : 'Purchased',
-                        " ",
-                        dateLabel(b.placementDate))),
-                React.createElement("button", { className: "btn secondary small", onClick: () => this.setState({ modal: { kind: 'batch', batch: b } }) }, "Change")),
-            React.createElement("div", { className: "today-date" },
-                React.createElement(Field, { label: "Today \u00B7 selected date" },
-                    React.createElement("input", { type: "date", "aria-label": "Selected date", value: date, onChange: e => this.setState({ selectedDate: e.target.value }) }))),
+                    React.createElement("span", { className: "eyebrow" }, heading.eyebrow),
+                    React.createElement("h1", null, heading.h1))),
+            this.workingDateBar(),
             React.createElement("div", { className: "quick-actions eight" },
-                React.createElement("button", { onClick: () => this.openAction({ action: 'usage', date }) },
+                React.createElement("button", { className: "primary-action", onClick: () => this.openAction({ action: 'usage', date }) },
                     React.createElement(Icon, { name: "log" }),
                     React.createElement("span", null, "Use feed")),
                 React.createElement("button", { onClick: () => this.openAction({ action: 'feed', date }) },
@@ -735,7 +856,7 @@ class App extends React.Component {
                     React.createElement(Icon, { name: "flock" }),
                     React.createElement("span", null, "Count birds")),
                 React.createElement("button", { onClick: () => this.openAction({ action: 'loss', date }) },
-                    React.createElement(Icon, { name: "trash" }),
+                    React.createElement(Icon, { name: "removal" }),
                     React.createElement("span", null, "Loss / removal")),
                 React.createElement("button", { onClick: () => this.openAction({ action: 'expense', date }) },
                     React.createElement(Icon, { name: "log" }),
@@ -746,156 +867,162 @@ class App extends React.Component {
                 React.createElement("button", { onClick: () => this.openAction({ action: 'note', date }) },
                     React.createElement(Icon, { name: "edit" }),
                     React.createElement("span", null, "Note"))),
-            React.createElement("div", { className: "metrics" },
-                React.createElement(Metric, { label: "Live birds", value: live.confirmed ? live.count : 'Not counted', sub: live.confirmed ? 'Verified count, less subsequent recorded removals' : `${live.count} placed-minus-removals; not a verified live count` }),
-                React.createElement(Metric, { label: "Latest measured sample", value: measured ? qty(s.weigh.avgKg) + ' kg' : '—', sub: measured ? dateLabel(s.weigh.date) : 'No measured sample yet' }),
-                React.createElement(Metric, { label: "Latest estimate", value: latestEstimate ? qty(latestEstimate.avgKg) + ' kg' : '—', sub: latestEstimate ? dateLabel(latestEstimate.date) : 'No estimate recorded' }),
-                React.createElement(Metric, { label: "Recorded stock", value: s.inventoryIncomplete ? 'Incomplete' : qty(s.inventoryKg) + ' kg', sub: s.inventoryIncomplete ? 'A purchase quantity is unknown' : 'Known remaining kilograms', accent: true })),
-            !!attention.length && React.createElement("section", { className: "card" }, attention.map((item) => React.createElement("div", { className: "attention-item", key: item.key },
-                React.createElement("div", null,
-                    React.createElement("strong", null, item.title),
-                    item.detail && React.createElement("p", null, item.detail)),
-                React.createElement("button", { type: "button", className: "text-btn", onClick: () => { if (item.actionType === 'records')
-                        this.switchTab('records');
-                    else if (item.eventId)
-                        this.openAction({ action: item.actionType, event: b.events.find((e) => e.id === item.eventId) });
-                    else
-                        this.openAction({ action: item.actionType, date }); } }, item.action)))),
+            preStart && React.createElement(Note, null, "Batch not started on this date. Purchased birds and chick cost are not treated as already present."),
+            React.createElement("div", { className: "metrics three" },
+                React.createElement(Metric, { label: "Birds", value: birdValue, sub: birdSub }),
+                React.createElement(Metric, { label: "Average weight", value: weightMain, sub: React.createElement(React.Fragment, null,
+                        weightSub,
+                        latestMeasured && latestEstimate && latestEstimate.date > latestMeasured.date && React.createElement("span", { className: "estimate-line" },
+                            "Later estimate: ",
+                            qty(latestEstimate.avgKg),
+                            " kg \u00B7 ",
+                            dateLabel(latestEstimate.date))) }),
+                React.createElement(Metric, { label: "Recorded feed stock", value: stockValue, sub: stockSub })),
             this.renderLastSave(b),
             React.createElement("section", { className: "card" },
-                React.createElement(SectionTitle, { title: "Today\u2019s entries", sub: dateLabel(date) }),
-                !todayEntries.length ? React.createElement("p", { className: "muted small-text" }, "No entry today does not mean a task was not performed.") : todayEntries.map((e) => React.createElement("div", { className: "recent-row", key: e.id },
+                React.createElement(SectionTitle, { title: "Entries", sub: dateLabel(date) }),
+                !todayEntries.length ? React.createElement("div", { className: "empty-log" },
+                    React.createElement("strong", null, "No entries recorded for this date."),
+                    React.createElement("p", { className: "muted small-text" }, "An empty log does not establish whether the work was performed.")) : todayEntries.map((e) => React.createElement("div", { className: "log-row", key: e.id },
                     React.createElement("div", null,
-                        React.createElement(Badge, null, TYPELABEL[e.type]),
-                        React.createElement("strong", null, e.name || TYPELABEL[e.type]),
-                        React.createElement("small", null, recordDescription(e, b)),
-                        React.createElement("div", { className: "button-row" },
-                            React.createElement("button", { className: "text-btn", onClick: () => this.openAction({ action: e.type, event: e }) }, "Edit"),
-                            React.createElement("button", { className: "text-btn", onClick: () => this.deleteRecord(e) }, "Undo"))),
-                    React.createElement("span", { className: "date" }, dateLabel(e.date))))),
-            React.createElement("div", { className: "two-col" },
-                React.createElement("section", { className: "card" },
-                    React.createElement(SectionTitle, { title: "Growth", sub: "Kilograms per bird \u00B7 dated observations" }),
-                    pts.length ? React.createElement(LineChart, { series: series.filter((x) => x.points.length), title: "Live weight over time", floorZero: true }) : React.createElement(Empty, { title: "Your growth chart starts here", text: "Add a dated weighing to see progress." }),
-                    !perf && React.createElement("p", { className: "muted small-text" }, "One estimated point is not a growth curve. No growth rate is inferred from it.")),
-                React.createElement("section", { className: "card" },
-                    React.createElement(SectionTitle, { title: "Spending" }),
-                    React.createElement("div", { className: "detail-grid" },
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Chicks"),
-                            React.createElement("strong", null, money(b.chickCost))),
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Feed purchased"),
-                            React.createElement("strong", null, money(s.feedPaid))),
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Other expenses"),
-                            React.createElement("strong", null, money(s.otherPaid))),
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Batch cash recorded"),
-                            React.createElement("strong", null, money(s.cashPaid)))),
-                    React.createElement("p", { className: "muted small-text" },
-                        "Budgets ",
-                        money(s.budgets),
-                        " and infrastructure ",
-                        money(this.capital()),
-                        " stay out of this cash total."))),
-            React.createElement("div", { className: "two-col" },
-                React.createElement("section", { className: "card" },
-                    React.createElement(SectionTitle, { title: "Feed and production" }),
-                    React.createElement("div", { className: "detail-grid" },
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Known feed bought"),
-                            React.createElement("strong", null,
-                                qty(s.knownPurchasedKg),
-                                " kg",
-                                s.inventoryIncomplete ? ' + unknown' : '')),
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Recorded feed used"),
-                            React.createElement("strong", null,
-                                qty(s.recordedUsedKg),
-                                " kg")),
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Known stock remaining"),
-                            React.createElement("strong", null,
-                                qty(s.inventoryKg),
-                                " kg")),
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Feed-use cost logged"),
-                            React.createElement("strong", null, money(s.usedFeed)))),
-                    perf && React.createElement(Note, null,
+                        React.createElement("strong", null, e.type === 'weigh' && e.method === 'estimate' ? 'Estimated weighing' : TYPELABEL[e.type]),
+                        React.createElement("small", null, recordDescription(e, b))),
+                    React.createElement("div", { className: "log-row-meta" },
+                        React.createElement("span", { className: "date" }, dateLabel(e.date)),
+                        React.createElement("button", { className: "text-btn", onClick: () => this.openAction({ action: e.type, event: e }) }, "Edit"))))),
+            !!attention.length && React.createElement("section", { className: "card" },
+                React.createElement(SectionTitle, { title: "Record gaps" }),
+                React.createElement("div", null, attention.map((item) => React.createElement("div", { className: "attention-item", key: item.key },
+                    React.createElement("div", null,
+                        React.createElement("strong", null, item.title),
+                        item.detail && React.createElement("p", null, item.detail)),
+                    React.createElement("button", { type: "button", className: "text-btn", onClick: () => { if (item.actionType === 'records')
+                            this.switchTab('records');
+                        else if (item.eventId)
+                            this.openAction({ action: item.actionType, event: b.events.find((e) => e.id === item.eventId) });
+                        else
+                            this.openAction({ action: item.actionType, date }); } }, item.action))))),
+            React.createElement("details", { className: "card batch-summary" },
+                React.createElement("summary", null, "Batch summary"),
+                React.createElement("h3", null, "Growth"),
+                pts.length ? React.createElement(LineChart, { series: series.filter((x) => x.points.length), title: "Live weight over time", floorZero: true }) : React.createElement(Empty, { title: "Your growth chart starts here", text: "Add a dated weighing to see progress." }),
+                React.createElement("label", { className: "overlay-toggle" },
+                    React.createElement("input", { type: "checkbox", checked: !!this.state.showModelOverlay, onChange: e => this.setState({ showModelOverlay: e.target.checked }) }),
+                    " Show modeled growth overlay"),
+                !perf && React.createElement("p", { className: "muted small-text" }, "One estimated point is not a growth curve. No growth rate is inferred from it."),
+                React.createElement("h3", null, "Spending"),
+                React.createElement("div", { className: "detail-grid" },
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Chicks"),
+                        React.createElement("strong", null, preStart ? '—' : money(b.chickCost))),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Feed purchased"),
+                        React.createElement("strong", null, money(s.feedPaid))),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Other expenses"),
+                        React.createElement("strong", null, money(s.otherPaid))),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Batch cash recorded"),
+                        React.createElement("strong", null, money(s.cashPaid)))),
+                React.createElement("p", { className: "muted small-text" },
+                    "Budgets ",
+                    money(s.budgets),
+                    " and infrastructure ",
+                    money(this.capital()),
+                    " stay out of this cash total."),
+                React.createElement("h3", null, "Feed and production"),
+                React.createElement("div", { className: "detail-grid" },
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Known feed bought"),
                         React.createElement("strong", null,
-                            qty(perf.gainG, 1),
-                            " g/day"),
-                        " observed sample growth (",
-                        dateLabel(perf.start),
-                        "\u2013",
-                        dateLabel(perf.end),
-                        "). ",
-                        perf.fcr !== null ? `${qty(perf.fcr)} logged-feed ratio; incomplete usage logs can bias it.` : 'No comparable logged-feed ratio is available yet.')),
-                React.createElement("section", { className: "card" },
-                    React.createElement(SectionTitle, { title: "Harvest results" }),
-                    React.createElement("div", { className: "detail-grid" },
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Birds harvested"),
-                            React.createElement("strong", null, s.harvestedBirds)),
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Dressed output"),
-                            React.createElement("strong", null,
-                                qty(s.dressedKg),
-                                " kg")),
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Cash received"),
-                            React.createElement("strong", null, money(s.revenue))),
-                        React.createElement("div", null,
-                            React.createElement("small", null, "Kept for home"),
-                            React.createElement("strong", null,
-                                qty(s.homeKg),
-                                " kg"))))));
+                            qty(s.knownPurchasedKg),
+                            " kg",
+                            s.inventoryIncomplete ? ' + unknown' : '')),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Recorded feed used"),
+                        React.createElement("strong", null,
+                            qty(s.recordedUsedKg),
+                            " kg")),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Known stock remaining"),
+                        React.createElement("strong", null,
+                            qty(s.inventoryKg),
+                            " kg")),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Feed-use cost logged"),
+                        React.createElement("strong", null, money(s.usedFeed)))),
+                perf && React.createElement(Note, null,
+                    React.createElement("strong", null,
+                        qty(perf.gainG, 1),
+                        " g/day"),
+                    " observed sample growth (",
+                    dateLabel(perf.start),
+                    "\u2013",
+                    dateLabel(perf.end),
+                    "). ",
+                    perf.fcr !== null ? `${qty(perf.fcr)} logged-feed ratio; incomplete usage logs can bias it.` : 'No comparable logged-feed ratio is available yet.'),
+                React.createElement("h3", null, "Harvest results"),
+                React.createElement("div", { className: "detail-grid" },
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Birds harvested"),
+                        React.createElement("strong", null, s.harvestedBirds)),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Dressed output"),
+                        React.createElement("strong", null,
+                            qty(s.dressedKg),
+                            " kg")),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Cash received"),
+                        React.createElement("strong", null, money(s.revenue))),
+                    React.createElement("div", null,
+                        React.createElement("small", null, "Kept for home"),
+                        React.createElement("strong", null,
+                            qty(s.homeKg),
+                            " kg")))));
     }
     renderFeed() {
-        const b = this.b(), inv = M.feedInventory(b), budgets = b.events.filter((e) => e.type === 'budget');
+        const b = this.b(), date = this.state.selectedDate || M.today(), inv = M.feedInventory(b, date), budgets = b.events.filter((e) => e.type === 'budget');
+        const heading = workingDateTitle(date);
+        const available = inv.filter((p) => p.kg !== null && p.remaining !== null && p.remaining > 0.00001);
+        const unknown = inv.filter((p) => p.kg === null);
+        const used = inv.filter((p) => p.kg !== null && (p.remaining === null || p.remaining <= 0.00001));
+        const known = M.sum(available.map((p) => p.remaining).concat(used.map((p) => p.remaining || 0)));
         return React.createElement(React.Fragment, null,
             React.createElement("div", { className: "page-title" },
                 React.createElement("div", null,
                     React.createElement("span", { className: "eyebrow" }, "FEED"),
                     React.createElement("h1", null, "Lots on hand"),
-                    React.createElement("p", null, "Each purchase stays its own lot. Matching names are not combined.")),
-                React.createElement("button", { className: "btn primary", onClick: () => this.openAction({ action: 'feed', date: this.state.selectedDate }) },
+                    React.createElement("p", null,
+                        heading.h1 === 'Today' ? 'Working date: today' : heading.h1,
+                        ". Each purchase stays its own lot.")),
+                React.createElement("button", { className: "btn primary", onClick: () => this.openAction({ action: 'feed', date }) },
                     React.createElement(Icon, { name: "plus" }),
                     "Buy feed")),
+            this.workingDateBar(),
+            React.createElement("div", { className: "feed-summary" },
+                React.createElement("strong", null,
+                    qty(known),
+                    " kg known remaining"),
+                unknown.length ? React.createElement("span", { className: "muted" },
+                    unknown.length,
+                    " purchase",
+                    unknown.length === 1 ? ' has' : 's have',
+                    " an unknown quantity") : React.createElement("span", { className: "muted" }, "Known remaining kilograms")),
             this.renderLastSave(b),
-            !inv.length && React.createElement(Empty, { title: "No purchase lots yet", text: "Buy feed with a known quantity to create a lot you can use.", action: React.createElement("button", { className: "btn secondary", onClick: () => this.openAction({ action: 'feed' }) }, "Buy feed") }),
-            inv.map((p) => React.createElement("section", { className: "card lot-card", key: p.id },
-                React.createElement("h3", null, p.name),
-                React.createElement("p", null,
-                    dateLabel(p.date),
-                    " \u00B7 ",
-                    (p.id || '').slice(-6)),
-                React.createElement("div", { className: "detail-grid" },
-                    React.createElement("div", null,
-                        React.createElement("small", null, "Bought"),
-                        React.createElement("strong", null,
-                            qty(p.kg),
-                            " kg")),
-                    React.createElement("div", null,
-                        React.createElement("small", null, "Recorded used"),
-                        React.createElement("strong", null,
-                            qty(p.used),
-                            " kg")),
-                    React.createElement("div", null,
-                        React.createElement("small", null, "Recorded remaining"),
-                        React.createElement("strong", null,
-                            qty(p.remaining),
-                            " kg")),
-                    React.createElement("div", null,
-                        React.createElement("small", null, "\u20B1/kg"),
-                        React.createElement("strong", null, money(p.price, 2)))),
-                p.kg === null && React.createElement(Note, { tone: "warn" }, "Quantity unknown \u2014 unavailable for lot-based feed-use logging."),
-                React.createElement("div", { className: "button-row" },
-                    p.kg !== null && React.createElement("button", { className: "btn secondary small", onClick: () => this.openAction({ action: 'usage', lotId: p.id, date: this.state.selectedDate }) }, "Use feed"),
-                    React.createElement("button", { className: "btn secondary small", onClick: () => this.openAction({ action: 'feed', product: { name: p.name, phase: p.phase, lastKg: p.kg, lastCost: p.cost, lastDate: p.date }, date: this.state.selectedDate }) }, "Buy again"),
-                    React.createElement("button", { className: "text-btn", onClick: () => this.openAction({ action: 'feed', event: p }) }, "View purchase")))),
-            React.createElement("section", { className: "card" },
+            !inv.length && React.createElement(Empty, { title: "No purchase lots yet", text: "Buy feed with a known quantity to create a lot you can use.", action: React.createElement("button", { className: "btn secondary", onClick: () => this.openAction({ action: 'feed', date }) }, "Buy feed") }),
+            !!available.length && React.createElement(React.Fragment, null,
+                React.createElement("h2", { className: "group-heading" }, "Available recorded stock"),
+                available.map((p) => this.renderLotCard(p, date))),
+            !!unknown.length && React.createElement(React.Fragment, null,
+                React.createElement("h2", { className: "group-heading" }, "Quantity unknown"),
+                unknown.map((p) => this.renderLotCard(p, date))),
+            !!used.length && React.createElement("details", { className: "used-lots" },
+                React.createElement("summary", null,
+                    "Fully used (",
+                    used.length,
+                    ")"),
+                used.map((p) => this.renderLotCard(p, date, { used: true }))),
+            React.createElement("section", { className: "card budget-section" },
                 React.createElement(SectionTitle, { title: "Feed budgets", sub: "Plans, not cash and not consumption" }),
                 !budgets.length ? React.createElement("p", { className: "muted small-text" }, "No feed budgets on this batch.") : budgets.map((e) => React.createElement("div", { className: "recent-row", key: e.id },
                     React.createElement("div", null,
@@ -905,102 +1032,106 @@ class App extends React.Component {
                             " planned \u00B7 ",
                             dateLabel(e.date)),
                         React.createElement("div", { className: "button-row" },
-                            React.createElement("button", { className: "text-btn", onClick: () => this.openAction({ action: 'feed', convert: e, date: this.state.selectedDate }) }, "Record purchase"),
-                            React.createElement("button", { className: "text-btn", onClick: () => this.openAction({ action: 'feed', convert: e, date: this.state.selectedDate }) }, "Convert to purchase")))))));
+                            React.createElement("button", { className: "text-btn", onClick: () => this.openAction({ action: 'feed', convert: e, date }) }, "Record actual purchase")))))));
     }
     renderRecords() {
-        const b = this.b(), events = b.events.filter((e) => this.state.filter === 'all' || e.type === this.state.filter).sort((a, c) => (c.date || '').localeCompare(a.date || ''));
+        const b = this.b(), st = this.state;
+        const matched = b.events.filter((e) => this.recordMatches(e, b)).sort((a, c) => (c.date || '').localeCompare(a.date || '') || (c.createdAt || '').localeCompare(a.createdAt || ''));
+        const groups = [];
+        const unknown = matched.filter((e) => !e.date);
+        const dated = matched.filter((e) => e.date);
+        const byDate = {};
+        dated.forEach((e) => { byDate[e.date] = byDate[e.date] || []; byDate[e.date].push(e); });
+        Object.keys(byDate).sort((a, c) => c.localeCompare(a)).forEach(d => groups.push({ key: d, title: dateLabel(d), rows: byDate[d].sort((a, c) => (c.createdAt || '').localeCompare(a.createdAt || '')) }));
+        if (unknown.length)
+            groups.push({ key: 'unknown', title: 'Date unknown', rows: unknown });
+        let remaining = st.recordsShown || 50;
+        const visible = [];
+        for (const g of groups) {
+            if (remaining <= 0)
+                break;
+            const rows = g.rows.slice(0, remaining);
+            remaining -= rows.length;
+            visible.push(Object.assign(Object.assign({}, g), { rows }));
+        }
+        const shown = visible.reduce((n, g) => n + g.rows.length, 0);
+        const clear = () => this.setState({ filter: 'all', recordSearch: '', recordFrom: '', recordTo: '', recordsShown: 50 });
+        const filtersOn = st.filter !== 'all' || st.recordSearch || st.recordFrom || st.recordTo;
         return React.createElement(React.Fragment, null,
             React.createElement("div", { className: "page-title" },
                 React.createElement("div", null,
-                    React.createElement("span", { className: "eyebrow" }, "THE FARM LOGBOOK"),
-                    React.createElement("h1", null, "Every entry, dated."),
-                    React.createElement("p", null, "Purchases, consumption, weights, counts and harvests in one place.")),
+                    React.createElement("span", { className: "eyebrow" }, "RECORDS"),
+                    React.createElement("h1", null, "Dated log"),
+                    React.createElement("p", null, "Search and correct historical entries. Unknown dates stay in their own group.")),
                 React.createElement("button", { className: "btn primary", onClick: this.openChooser },
                     React.createElement(Icon, { name: "plus" }),
                     "Add record")),
+            this.renderLastSave(b),
             React.createElement("section", { className: "card" },
-                React.createElement("div", { className: "filter-row" },
-                    React.createElement("label", null,
-                        "Show ",
-                        React.createElement("select", { "aria-label": "Filter records", value: this.state.filter, onChange: e => this.setState({ filter: e.target.value }) },
+                React.createElement("div", { className: "filter-row records-filters" },
+                    React.createElement(Field, { label: "Search" },
+                        React.createElement("input", { "aria-label": "Search records", value: st.recordSearch, onChange: e => this.setState({ recordSearch: e.target.value, recordsShown: 50 }), placeholder: "Name, note, or feed product" })),
+                    React.createElement(Field, { label: "Record type" },
+                        React.createElement("select", { "aria-label": "Filter records", value: st.filter, onChange: e => this.setState({ filter: e.target.value, recordsShown: 50 }) },
                             React.createElement("option", { value: "all" }, "All records"),
                             Object.entries(TYPELABEL).map(([v, l]) => React.createElement("option", { key: v, value: v }, l)))),
+                    React.createElement(Field, { label: "From" },
+                        React.createElement("input", { type: "date", "aria-label": "Records from date", value: st.recordFrom, onChange: e => this.setState({ recordFrom: e.target.value, recordsShown: 50 }) })),
+                    React.createElement(Field, { label: "To" },
+                        React.createElement("input", { type: "date", "aria-label": "Records to date", value: st.recordTo, onChange: e => this.setState({ recordTo: e.target.value, recordsShown: 50 }) })),
+                    filtersOn && React.createElement("button", { type: "button", className: "btn secondary", onClick: clear }, "Clear filters"),
                     React.createElement("span", { className: "muted" },
-                        events.length,
-                        " entries")),
-                !events.length ? React.createElement(Empty, { title: "No entries here yet", text: "Add a record for this batch." }) : events.map((e) => React.createElement("article", { className: "record", key: e.id },
-                    React.createElement("div", { className: "record-top" },
-                        React.createElement(Badge, { kind: e.type === 'budget' || e.method === 'estimate' ? 'warn' : 'muted' }, e.type === 'weigh' && e.method === 'estimate' ? 'Estimated weight' : TYPELABEL[e.type]),
-                        React.createElement("span", null, dateLabel(e.date))),
-                    React.createElement("h3", null, e.name || TYPELABEL[e.type]),
-                    React.createElement("p", null, recordDescription(e, b)),
-                    e.note && e.type !== 'note' && React.createElement("p", { className: "record-note" }, e.note),
-                    React.createElement("div", { className: "record-buttons" },
-                        e.type === 'budget' && React.createElement("button", { className: "text-btn", onClick: () => this.openAction({ action: 'feed', convert: e }) },
-                            "Convert to purchase ",
-                            React.createElement(Icon, { name: "arrow", size: 15 })),
-                        React.createElement("div", { className: "spacer" }),
-                        React.createElement("button", { className: "icon-btn", title: "Edit record", "aria-label": 'Edit ' + (e.name || TYPELABEL[e.type]), onClick: () => this.openAction({ action: e.type, event: e }) },
-                            React.createElement(Icon, { name: "edit", size: 17 })),
-                        React.createElement("button", { className: "icon-btn danger", title: "Delete record", "aria-label": 'Delete ' + (e.name || TYPELABEL[e.type]), onClick: () => this.deleteRecord(e) },
-                            React.createElement(Icon, { name: "trash", size: 17 })))))));
+                        matched.length,
+                        " matching")),
+                !matched.length ? React.createElement(Empty, { title: "No entries here yet", text: "Add a record for this batch." }) : visible.map((g) => React.createElement("div", { className: "record-group", key: g.key },
+                    React.createElement("h2", null, g.title),
+                    g.rows.map((e) => React.createElement("article", { className: "record", key: e.id },
+                        React.createElement("div", { className: "record-top" },
+                            React.createElement(Badge, { kind: e.type === 'budget' || e.method === 'estimate' ? 'warn' : 'muted' }, e.type === 'weigh' && e.method === 'estimate' ? 'Estimated weight' : TYPELABEL[e.type]),
+                            React.createElement("span", null, dateLabel(e.date))),
+                        React.createElement("h3", null, e.name || TYPELABEL[e.type]),
+                        React.createElement("p", null, recordDescription(e, b)),
+                        e.note && e.type !== 'note' && React.createElement("p", { className: "record-note" }, e.note),
+                        React.createElement("div", { className: "record-buttons" },
+                            e.type === 'budget' && React.createElement("button", { className: "text-btn", onClick: () => this.openAction({ action: 'feed', convert: e, date: this.state.selectedDate }) },
+                                "Record actual purchase ",
+                                React.createElement(Icon, { name: "arrow", size: 15 })),
+                            React.createElement("div", { className: "spacer" }),
+                            React.createElement("button", { className: "icon-btn", title: "Edit record", "aria-label": 'Edit ' + (e.name || TYPELABEL[e.type]), onClick: () => this.openAction({ action: e.type, event: e }) },
+                                React.createElement(Icon, { name: "edit", size: 17 })),
+                            React.createElement("button", { className: "icon-btn danger", title: "Delete record", "aria-label": 'Delete ' + (e.name || TYPELABEL[e.type]), onClick: () => this.deleteRecord(e) },
+                                React.createElement(Icon, { name: "trash", size: 17 }))))))),
+                shown < matched.length && React.createElement("button", { type: "button", className: "btn secondary", onClick: () => this.setState({ recordsShown: shown + 50 }) }, "Show more")));
     }
     renderForecast() {
         const b = this.b(), p = this.state.scenarioDraft || b.forecast, f = this.projection(), s = M.summary(b, p.startDate || M.today()), perf = M.recentPerformance(b);
         const chosen = f.rows.find((r) => r.day === this.state.selectedDay) || f.best;
         const important = f.rows.filter((r) => { var _a; return [f.startDay, 35, 38, 40, 42, 45, 47, 49, 52, 56, 60, 70, 84, p.endDay, (_a = f.best) === null || _a === void 0 ? void 0 : _a.day, this.state.selectedDay].includes(r.day); });
+        const dirty = !!this.state.scenarioDraft;
+        const proposal = this.state.forecastProposal;
+        const review = this.state.forecastStartReview;
         return React.createElement(React.Fragment, null,
             React.createElement("div", { className: "page-title" },
                 React.createElement("div", null,
                     React.createElement("span", { className: "eyebrow" }, "HARVEST PLANNER"),
-                    React.createElement("h1", null, "The cost of another week."),
-                    React.createElement("p", null, "Compare slaughter dates using explicit, editable assumptions.")),
+                    React.createElement("h1", null, f.rows.length ? (dirty ? 'Unsaved scenario' : 'Harvest comparison') : 'Set up a harvest comparison'),
+                    React.createElement("p", null, f.rows.length ? 'Lowest modeled operating cost within this scenario and comparison range.' : 'Enter a starting flock state and the costs you want to model.')),
                 React.createElement(Badge, { kind: "warn" }, "Scenario, not a guarantee")),
-            React.createElement(Note, { tone: "warn" }, "The earlier chat curves were illustrations, not measured forecasts. This planner does not assume 47 survivors, \u20B130/kg feed, or a guaranteed day-52 optimum. Supply the missing values below."),
-            React.createElement("section", { className: "card" },
-                React.createElement(SectionTitle, { title: "Your starting point", sub: "The cost and flock state must refer to the same date." }),
-                React.createElement("div", { className: "form-grid three" },
-                    React.createElement(Field, { label: "Projection start date" },
-                        React.createElement("input", { type: "date", min: b.placementDate, value: p.startDate || '', onChange: e => this.setState({ scenarioDraft: Object.assign(Object.assign({}, p), { startDate: e.target.value }) }) })),
-                    this.forecastInput('birds', 'Birds remaining at start', 'Required; use a real count or an explicitly chosen scenario.', 1),
-                    this.forecastInput('weightKg', 'Average live weight at start (kg)', 'Use a weighed sample average. Rough estimates are not measured samples.'),
-                    this.forecastInput('baselineCost', 'Operating cost USED by start (₱)', 'Chicks + feed already used + other costs. Exclude unused feed, budgets and the pen.'),
-                    this.forecastInput('feedPrice', 'Future feed price (₱ per kg)', 'Enter your actual purchase price, or your chosen scenario price.'),
-                    this.forecastInput('yieldPct', 'Dressed yield (%)', '70% is an editable illustration. Actual yield comes from harvest records.')),
-                React.createElement("div", { className: "button-row" },
-                    React.createElement("button", { className: "btn secondary small", onClick: () => { const prop = M.proposeForecastStart(b); if (!prop.startDate) {
-                            this.toast('Add a weighing first.');
-                            return;
-                        } this.setState({ scenarioDraft: Object.assign(Object.assign({}, p), { startDate: prop.startDate, weightKg: prop.weightKg, birds: prop.birds, baselineCost: prop.baselineCost, feedPrice: prop.feedPrice }) }); this.toast(prop.weightMethod === 'estimate' ? 'Copied the latest estimate; verified count, start-date production cost, and known feed price only.' : 'Copied the latest weight; only a verified count, start-date production cost, and known feed price were copied.'); } }, "Use latest records"),
-                    React.createElement("button", { className: "btn secondary small", onClick: () => this.setState({ scenarioDraft: Object.assign(Object.assign({}, p), { baselineCost: s.usedOperating }) }) },
-                        "Use logged production costs (",
-                        money(s.usedOperating),
-                        ")")),
-                React.createElement("p", { className: "muted small-text" }, "Logged production costs may be incomplete. Include only chicks, feed already used, and other incurred costs at the projection start. Exclude unused feed, future budgets, and shared infrastructure."),
-                perf && React.createElement(Note, null,
-                    "Observed ",
-                    qty(perf.gainG, 1),
-                    " g/day between the last two measured samples. Enter growth assumptions below; they are not filled automatically.")),
-            React.createElement("section", { className: "card" },
-                React.createElement(SectionTitle, { title: "Growth and feed assumptions", sub: "Editable scenario values, not a breed curve" }),
-                React.createElement("div", { className: "form-grid three" },
-                    this.forecastInput('gainG', 'Starting daily gain (g)', 'Live-weight gain on the first modeled day.'),
-                    this.forecastInput('gainDeclinePct', 'Daily growth decline (%)', '0 keeps gain constant.'),
-                    this.forecastInput('fcr', 'Starting incremental FCR', 'Feed kg per extra live kg.'),
-                    this.forecastInput('fcrRise', 'Daily FCR increase', 'How quickly conversion worsens.'),
-                    this.forecastInput('dailyOther', 'Extra daily flock costs (₱)', 'Charged once per elapsed modeled day.'),
-                    this.forecastInput('endDay', 'Final day since purchase', 'Must be after the projection start.', 1)),
-                React.createElement("div", { className: "form-grid" },
-                    React.createElement(Field, { label: "Dressed sale / replacement price (\u20B1/kg)", hint: "Leave blank to hide profit figures." },
-                        React.createElement("input", { type: "number", min: "0", step: "any", value: p.salePrice === null ? '' : p.salePrice, onChange: e => this.setState({ scenarioDraft: Object.assign(Object.assign({}, p), { salePrice: e.target.value === '' ? null : Number(e.target.value) }) }) })),
-                    this.forecastInput('downtime', 'Days between batches', 'Turnaround after a full cycle.', 1)),
-                React.createElement("div", { className: "button-row" },
-                    React.createElement("button", { className: "btn primary", onClick: this.saveScenario }, "Save scenario"))),
-            f.errors.length > 0 && React.createElement("section", { className: "card" },
-                React.createElement("div", { className: "requirements" }, f.errors.map((err) => React.createElement("p", { key: err }, err)))),
-            f.atBoundary && React.createElement(Note, { tone: "warn" }, "The lowest modeled cost is at the edge of your selected date range. This does not establish an interior optimum or a biological harvest recommendation."),
-            b.events.some((e) => e.type === 'harvest') && React.createElement(Note, { tone: "warn" }, "This is a forward scenario for the remaining birds only. Allocate the starting cost to those birds; do not load the full batch cost after a partial harvest. The app does not infer that allocation."),
+            f.rows.length > 0 && chosen && React.createElement(React.Fragment, null,
+                React.createElement("section", { className: "card result-card" },
+                    React.createElement(SectionTitle, { title: "Lowest modeled operating cost", sub: "A low within the selected scenario and comparison range" }),
+                    React.createElement("p", { className: "primary-metric" },
+                        money(f.best.perKg, 2),
+                        "/kg dressed"),
+                    React.createElement("p", null,
+                        dateLabel(f.best.date),
+                        " \u00B7 Day ",
+                        f.best.day,
+                        " since purchase"),
+                    React.createElement("p", null,
+                        "Dates within 1% of that cost: ",
+                        f.nearBest.map((r) => dateShort(r.date)).filter((v, i, a) => a.indexOf(v) === i).join(', ')),
+                    f.atBoundary && React.createElement(Note, { tone: "warn" }, "This low is at the edge of the selected date range. It does not establish an interior optimum."))),
             f.rows.length > 0 && chosen && React.createElement(React.Fragment, null,
                 React.createElement("section", { className: "card" },
                     React.createElement(SectionTitle, { title: "Operating cost per dressed kilogram", sub: `${p.birds} birds · ${p.yieldPct}% dressed yield · no future deaths modeled` }),
@@ -1024,13 +1155,13 @@ class App extends React.Component {
                         React.createElement("table", { className: "forecast-table" },
                             React.createElement("thead", null,
                                 React.createElement("tr", null,
-                                    React.createElement("th", null, "Day / date"),
+                                    React.createElement("th", null, "Date"),
                                     React.createElement("th", null, "Live kg/bird"),
-                                    React.createElement("th", null, "Extra feed kg"),
-                                    React.createElement("th", null, "Operating \u20B1"),
-                                    React.createElement("th", null, "Dressed kg"),
+                                    React.createElement("th", { className: "desk-only" }, "Extra feed kg"),
+                                    React.createElement("th", { className: "desk-only" }, "Operating \u20B1"),
+                                    React.createElement("th", { className: "desk-only" }, "Dressed kg"),
                                     React.createElement("th", null, "Operating \u20B1/kg"),
-                                    React.createElement("th", null, "Next-day marginal \u20B1/kg*"))),
+                                    React.createElement("th", { className: "desk-only" }, "Next-day marginal \u20B1/kg*"))),
                             React.createElement("tbody", null, important.map((r) => { const next = f.rows.find((n) => n.day === r.day + 1); return React.createElement("tr", { key: r.day, className: r.day === chosen.day ? 'selected' : '', onClick: () => this.setState({ selectedDay: r.day }) },
                                 React.createElement("td", null,
                                     React.createElement("button", { className: "day-pick", "aria-label": 'Select day ' + r.day },
@@ -1039,15 +1170,109 @@ class App extends React.Component {
                                     React.createElement("small", null, dateLabel(r.date)),
                                     r.day === f.best.day && React.createElement(Badge, { kind: "green" }, "Scenario low")),
                                 React.createElement("td", null, qty(r.weight)),
-                                React.createElement("td", null, qty(r.feedKg, 1)),
-                                React.createElement("td", null, money(r.cost)),
-                                React.createElement("td", null, qty(r.dressed, 1)),
+                                React.createElement("td", { className: "desk-only" }, qty(r.feedKg, 1)),
+                                React.createElement("td", { className: "desk-only" }, money(r.cost)),
+                                React.createElement("td", { className: "desk-only" }, qty(r.dressed, 1)),
                                 React.createElement("td", null,
                                     React.createElement("strong", null, money(r.perKg, 2))),
-                                React.createElement("td", null, next ? money(next.marginal, 2) : '—')); })))),
+                                React.createElement("td", { className: "desk-only" }, next ? money(next.marginal, 2) : '—')); })))),
+                    chosen && React.createElement("div", { className: "phone-row-detail" },
+                        React.createElement("h3", null,
+                            "Selected day ",
+                            chosen.day),
+                        React.createElement("div", { className: "detail-grid" },
+                            React.createElement("div", null,
+                                React.createElement("small", null, "Cumulative extra feed"),
+                                React.createElement("strong", null,
+                                    qty(chosen.feedKg, 1),
+                                    " kg")),
+                            React.createElement("div", null,
+                                React.createElement("small", null, "Operating cost"),
+                                React.createElement("strong", null, money(chosen.cost))),
+                            React.createElement("div", null,
+                                React.createElement("small", null, "Dressed output"),
+                                React.createElement("strong", null,
+                                    qty(chosen.dressed, 1),
+                                    " kg")),
+                            React.createElement("div", null,
+                                React.createElement("small", null, "Next-day marginal cost"),
+                                React.createElement("strong", null, (() => { const next = f.rows.find((n) => n.day === chosen.day + 1); return next ? money(next.marginal, 2) : '—'; })())))),
                     React.createElement("p", { className: "muted small-text" }, "*Cost of the additional dressed gain during the next modeled day. Extra feed is cumulative from the projection start. It is feed consumed, not necessarily new feed to purchase."),
                     React.createElement("div", { className: "button-row" },
-                        React.createElement("button", { className: "btn secondary small", onClick: () => this.exportForecast(f.rows) }, "Export daily comparison CSV"))),
+                        React.createElement("button", { className: "btn secondary small", onClick: () => this.exportForecast(f.rows) }, "Export daily comparison CSV")))),
+            React.createElement("section", { className: "card" },
+                React.createElement(SectionTitle, { title: "Starting flock and cost", sub: "The cost and flock state must refer to the same date." }),
+                React.createElement("div", { className: "form-grid three" },
+                    React.createElement(Field, { label: "Starting date" },
+                        React.createElement("input", { type: "date", min: b.placementDate, value: p.startDate || '', onChange: e => { const next = e.target.value; const prev = p.startDate; this.setState({ scenarioDraft: Object.assign(Object.assign({}, p), { startDate: next }), forecastStartReview: prev && next && prev !== next ? { from: prev, to: next, birds: p.birds, weightKg: p.weightKg, baselineCost: p.baselineCost } : null, scenarioProvenance: this.state.scenarioProvenance === 'records' ? null : this.state.scenarioProvenance }); } })),
+                    this.forecastInput('birds', 'Birds remaining at start', 'Required; use a real count or an explicitly chosen scenario.', 1),
+                    this.forecastInput('weightKg', 'Average live weight at start (kg)', 'Use a weighed sample average. Rough estimates are not measured samples.'),
+                    this.forecastInput('baselineCost', 'Operating cost USED by start (₱)', 'Chicks + feed already used + other costs. Exclude unused feed, budgets and the pen.'),
+                    this.forecastInput('feedPrice', 'Future feed price (₱ per kg)', 'Enter your actual purchase price, or your chosen scenario price.'),
+                    this.forecastInput('yieldPct', 'Dressed yield (%)', '70% is an editable illustration. Actual yield comes from harvest records.')),
+                !this.state.scenarioProvenance && !this.state.scenarioDraft && React.createElement("p", { className: "muted small-text" }, "Saved scenario values. How they were entered is not reconstructed."),
+                review && React.createElement(Note, { tone: "warn" },
+                    "Starting date changed from ",
+                    dateLabel(review.from),
+                    " to ",
+                    dateLabel(review.to),
+                    ". Birds, weight, and cost need review. ",
+                    React.createElement("button", { type: "button", className: "text-btn", onClick: () => { var _a; const prop = M.proposeForecastStart(b); this.setState({ scenarioDraft: Object.assign(Object.assign({}, p), { startDate: review.to, weightKg: prop.weightKg, birds: prop.birds, baselineCost: prop.baselineCost, feedPrice: (_a = prop.feedPrice) !== null && _a !== void 0 ? _a : p.feedPrice }), forecastStartReview: null, scenarioProvenance: 'records', forecastProposal: null }); } }, "Reset date-dependent starting values from records"),
+                    " \u00B7 ",
+                    React.createElement("button", { type: "button", className: "text-btn", onClick: () => this.setState({ forecastStartReview: null, scenarioProvenance: 'chosen' }) }, "Retain them as values chosen for the new date")),
+                React.createElement("div", { className: "button-row" },
+                    React.createElement("button", { className: "btn secondary", onClick: () => { const prop = M.proposeForecastStart(b); if (!prop.startDate) {
+                            this.toast('Add a weighing first.');
+                            return;
+                        } this.setState({ forecastProposal: prop }); } }, "Use latest records"),
+                    React.createElement("button", { className: "btn secondary", onClick: () => this.setState({ scenarioDraft: Object.assign(Object.assign({}, p), { baselineCost: s.usedOperating }) }) },
+                        "Use logged production costs (",
+                        money(s.usedOperating),
+                        ")")),
+                proposal && React.createElement("div", { className: "proposal-table" },
+                    React.createElement("h3", null, "Values that will be copied"),
+                    React.createElement("table", null,
+                        React.createElement("tbody", null,
+                            React.createElement("tr", null,
+                                React.createElement("th", null, "Weight"),
+                                React.createElement("td", null, proposal.weightKg == null ? 'Not recorded' : `${qty(proposal.weightKg)} kg · ${proposal.weightMethod} · ${dateLabel(proposal.startDate)}`)),
+                            React.createElement("tr", null,
+                                React.createElement("th", null, "Bird count"),
+                                React.createElement("td", null, proposal.birds == null ? 'Not a verified count on this date' : `${proposal.birds} birds from a count record, less later recorded removals. Not a physical count on the weigh date.`)),
+                            React.createElement("tr", null,
+                                React.createElement("th", null, "Starting cost"),
+                                React.createElement("td", null, proposal.baselineCost == null ? 'Not recorded' : money(proposal.baselineCost) + ' consumption-based logged production cost at the starting date')),
+                            React.createElement("tr", null,
+                                React.createElement("th", null, "Feed price"),
+                                React.createElement("td", null, proposal.feedPrice == null ? 'Not recorded' : `${money(proposal.feedPrice, 2)}/kg${proposal.feedPriceDate ? ' · ' + dateLabel(proposal.feedPriceDate) : ''}`)))),
+                    React.createElement("p", { className: "muted small-text" }, "Logged production cost reflects entered records. Unrecorded feed use or expenses may make it incomplete. Missing values remain blank."),
+                    React.createElement("div", { className: "button-row" },
+                        React.createElement("button", { className: "btn primary", onClick: () => { this.setState({ scenarioDraft: Object.assign(Object.assign({}, p), { startDate: proposal.startDate, weightKg: proposal.weightKg, birds: proposal.birds, baselineCost: proposal.baselineCost, feedPrice: proposal.feedPrice }), forecastProposal: null, scenarioProvenance: 'records' }); } }, "Apply these values"),
+                        React.createElement("button", { className: "btn secondary", onClick: () => this.setState({ forecastProposal: null }) }, "Cancel"))),
+                React.createElement("p", { className: "muted small-text" }, "Logged production costs may be incomplete. Include only chicks, feed already used, and other incurred costs at the projection start. Exclude unused feed, future budgets, and shared infrastructure."),
+                perf && React.createElement(Note, null,
+                    "Observed ",
+                    qty(perf.gainG, 1),
+                    " g/day between the last two measured samples. Enter growth assumptions below; they are not filled automatically.")),
+            React.createElement("section", { className: "card" },
+                React.createElement(SectionTitle, { title: "Growth and feed assumptions", sub: "Editable scenario values, not a breed curve" }),
+                React.createElement("div", { className: "form-grid three" },
+                    this.forecastInput('gainG', 'Starting daily gain (g)', 'Live-weight gain on the first modeled day.'),
+                    this.forecastInput('gainDeclinePct', 'Daily growth decline (%)', '0 keeps gain constant.'),
+                    this.forecastInput('fcr', 'Incremental FCR', 'Feed kilograms used for each additional kilogram of live weight.'),
+                    this.forecastInput('fcrRise', 'Daily FCR increase', 'How quickly conversion worsens.'),
+                    this.forecastInput('dailyOther', 'Extra daily flock costs (₱)', 'Charged once per elapsed modeled day.'),
+                    this.forecastInput('endDay', 'Final day since purchase', 'Must be after the projection start.', 1)),
+                React.createElement("div", { className: "form-grid" },
+                    React.createElement(Field, { label: "Dressed sale / replacement price (\u20B1/kg)", hint: "Leave blank to hide profit figures." },
+                        React.createElement("input", { type: "number", min: "0", step: "any", value: p.salePrice === null ? '' : p.salePrice, onChange: e => this.setState({ scenarioDraft: Object.assign(Object.assign({}, p), { salePrice: e.target.value === '' ? null : Number(e.target.value) }) }) })),
+                    this.forecastInput('downtime', 'Days between batches', 'Turnaround after a full cycle.', 1)),
+                React.createElement("div", { className: "button-row" },
+                    React.createElement("button", { className: "btn primary", onClick: this.saveScenario }, "Save scenario"))),
+            dirty && f.errors.length > 0 && React.createElement("section", { className: "card" },
+                React.createElement("div", { className: "requirements" }, f.errors.map((err) => React.createElement("p", { key: err }, err)))),
+            b.events.some((e) => e.type === 'harvest') && React.createElement(Note, { tone: "warn" }, "This is a forward scenario for the remaining birds only. Allocate the starting cost to those birds; do not load the full batch cost after a partial harvest. The app does not infer that allocation."),
+            f.rows.length > 0 && chosen && React.createElement(React.Fragment, null,
                 React.createElement("section", { className: "card annual" },
                     React.createElement(SectionTitle, { title: `Repeat-batch economics · day ${chosen.day}`, sub: "365-day capacity scenario, not a calendar schedule or promised profit" }),
                     React.createElement("div", { className: "metrics compact" },
@@ -1091,12 +1316,14 @@ class App extends React.Component {
         return React.createElement(React.Fragment, null,
             React.createElement("div", { className: "page-title" },
                 React.createElement("div", null,
-                    React.createElement("span", { className: "eyebrow" }, "ONE PEN. MANY BATCHES."),
-                    React.createElement("h1", null, "Batch history & capital"),
-                    React.createElement("p", null, "Keep each flock's records separate and reuse the infrastructure.")),
-                React.createElement("button", { className: "btn primary", onClick: () => this.setState({ modal: { kind: 'batch' } }) },
-                    React.createElement(Icon, { name: "plus" }),
-                    "New batch")),
+                    React.createElement("span", { className: "eyebrow" }, "MORE"),
+                    React.createElement("h1", null, "Batches"),
+                    React.createElement("p", null, "Keep each flock's records separate.")),
+                React.createElement("div", { className: "button-row" },
+                    React.createElement("button", { type: "button", className: "btn secondary", onClick: () => this.openMore('menu') }, "Back"),
+                    React.createElement("button", { className: "btn primary", onClick: () => this.setState({ modal: { kind: 'batch' } }) },
+                        React.createElement(Icon, { name: "plus" }),
+                        "New batch"))),
             React.createElement("div", { className: "batch-grid" }, d.batches.map((b) => { const s = M.summary(b), selected = b.id === d.selectedBatchId; return React.createElement("section", { className: 'card batch-card ' + (selected ? 'active' : ''), key: b.id },
                 React.createElement(Badge, { kind: b.status === 'active' ? 'green' : 'muted' }, b.status),
                 React.createElement("h2", null, b.name),
@@ -1129,9 +1356,19 @@ class App extends React.Component {
                             this.toast(e.message);
                         } } }, selected ? 'Open current batch' : 'Open batch'),
                     React.createElement("button", { className: "icon-btn", "aria-label": 'Edit ' + b.name, onClick: () => this.setState({ modal: { kind: 'batch', batch: b } }) },
-                        React.createElement(Icon, { name: "edit" })))); })),
+                        React.createElement(Icon, { name: "edit" })))); })));
+    }
+    renderInfrastructure() {
+        const d = this.state.data;
+        return React.createElement(React.Fragment, null,
+            React.createElement("div", { className: "page-title" },
+                React.createElement("div", null,
+                    React.createElement("span", { className: "eyebrow" }, "MORE"),
+                    React.createElement("h1", null, "Shared infrastructure"),
+                    React.createElement("p", null, "One-time purchases, separate from feed and chicks.")),
+                React.createElement("button", { type: "button", className: "btn secondary", onClick: () => this.openMore('menu') }, "Back")),
             React.createElement("section", { className: "card" },
-                React.createElement(SectionTitle, { title: "Shared infrastructure", sub: "One-time purchases, separate from feed and chicks." }),
+                React.createElement(SectionTitle, { title: "Capital items", sub: "Not operating cost" }),
                 React.createElement("div", { className: "table-wrap" },
                     React.createElement("table", null,
                         React.createElement("thead", null,
@@ -1188,13 +1425,16 @@ class App extends React.Component {
                     " to the full-cost scenario, before dividing by dressed kilograms.")));
     }
     renderBackup() {
+        const nested = !!(this.state.data && this.state.data.batches && this.state.data.batches.length);
         return React.createElement(React.Fragment, null,
             React.createElement("div", { className: "page-title" },
                 React.createElement("div", null,
-                    React.createElement("span", { className: "eyebrow" }, "YOUR DATA STAYS YOURS"),
+                    React.createElement("span", { className: "eyebrow" }, nested ? 'MORE' : 'BACKUP'),
                     React.createElement("h1", null, "Backup & transfer"),
                     React.createElement("p", null, "Offline storage on this device. No account, subscription or cloud service.")),
-                React.createElement(Badge, { kind: "green" }, NATIVE ? 'Android local storage' : 'Browser local storage')),
+                React.createElement("div", { className: "button-row" },
+                    nested && React.createElement("button", { type: "button", className: "btn secondary", onClick: () => this.openMore('menu') }, "Back"),
+                    React.createElement(Badge, { kind: "green" }, NATIVE ? 'Android local storage' : 'Browser local storage'))),
             React.createElement(Note, { tone: "warn" },
                 React.createElement("strong", null, "Phone and tablet do not automatically sync."),
                 " Export a JSON backup on the device with the newest data, then import it on the other device. Import replaces the whole local ledger; it does not merge records. Back up before uninstalling or clearing app data."),
@@ -1216,9 +1456,18 @@ class App extends React.Component {
                     React.createElement(Field, { label: "Backup JSON", wide: true },
                         React.createElement("textarea", { rows: 6, spellCheck: false, value: this.state.importText, placeholder: "Paste a Flock Ledger backup here\u2026", onChange: e => this.setState({ importText: e.target.value, importError: '' }) })),
                     this.state.importError && React.createElement(Note, { tone: "error" }, this.state.importError),
-                    React.createElement("button", { className: "btn primary", disabled: !this.state.importText.trim(), onClick: this.importBackup }, "Validate & restore backup"))),
+                    React.createElement("button", { className: "btn primary", disabled: !this.state.importText.trim(), onClick: this.importBackup }, "Validate & restore backup"))));
+    }
+    renderAbout() {
+        return React.createElement(React.Fragment, null,
+            React.createElement("div", { className: "page-title" },
+                React.createElement("div", null,
+                    React.createElement("span", { className: "eyebrow" }, "MORE"),
+                    React.createElement("h1", null, "About & calculation definitions"),
+                    React.createElement("p", null, "Flock Ledger 1.0 \u00B7 offline records")),
+                React.createElement("button", { type: "button", className: "btn secondary", onClick: () => this.openMore('menu') }, "Back")),
             React.createElement("section", { className: "card" },
-                React.createElement(SectionTitle, { title: "About this build", sub: "Flock Ledger 1.0 \u00B7 private offline edition" }),
+                React.createElement(SectionTitle, { title: "About this build", sub: "Offline records on this device" }),
                 React.createElement("p", null, "Records and calculations run entirely on your device. The APK has no internet permission, analytics or advertising. No feed-price service or market-price feed is connected."),
                 React.createElement("div", { className: "detail-grid" },
                     React.createElement("div", null,
@@ -1251,14 +1500,36 @@ class App extends React.Component {
                     React.createElement("strong", null, "Data quality:"),
                     " purchase date may be approximate; age at purchase, survivors, feed quantity and weights can remain unknown. No breed growth targets are embedded.")));
     }
-    renderMore() { return React.createElement(React.Fragment, null,
-        React.createElement("div", { className: "page-title" },
-            React.createElement("div", null,
-                React.createElement("span", { className: "eyebrow" }, "MORE"),
-                React.createElement("h1", null, "Batches, backup and about"),
-                React.createElement("p", null, "Operational tasks stay on Today and Feed. Backup is explicit \u2014 this app does not sync."))),
-        this.renderBatches(),
-        this.renderBackup()); }
+    renderMore() {
+        const page = this.state.morePage || 'menu';
+        if (page === 'batches')
+            return this.renderBatches();
+        if (page === 'infrastructure')
+            return this.renderInfrastructure();
+        if (page === 'backup')
+            return this.renderBackup();
+        if (page === 'about')
+            return this.renderAbout();
+        return React.createElement(React.Fragment, null,
+            React.createElement("div", { className: "page-title" },
+                React.createElement("div", null,
+                    React.createElement("span", { className: "eyebrow" }, "MORE"),
+                    React.createElement("h1", null, "More"),
+                    React.createElement("p", null, "Batches, infrastructure, backup, and how the ledger calculates cost."))),
+            React.createElement("nav", { className: "more-menu", "aria-label": "More pages" },
+                React.createElement("button", { type: "button", className: "more-link", "aria-label": "Batches", onClick: () => this.openMore('batches') },
+                    React.createElement("strong", null, "Batches"),
+                    React.createElement("span", null, "Add or open a flock")),
+                React.createElement("button", { type: "button", className: "more-link", "aria-label": "Shared infrastructure", onClick: () => this.openMore('infrastructure') },
+                    React.createElement("strong", null, "Shared infrastructure"),
+                    React.createElement("span", null, "Capital, separate from operating cost")),
+                React.createElement("button", { type: "button", className: "more-link", "aria-label": "Backup & transfer", onClick: () => this.openMore('backup') },
+                    React.createElement("strong", null, "Backup & transfer"),
+                    React.createElement("span", null, "Export or restore this device")),
+                React.createElement("button", { type: "button", className: "more-link", "aria-label": "About & calculation definitions", onClick: () => this.openMore('about') },
+                    React.createElement("strong", null, "About & calculation definitions"),
+                    React.createElement("span", null, "What recorded cash, production cost, and forecast cost mean"))));
+    }
     render() {
         const s = this.state;
         if (!s.data)
@@ -1312,7 +1583,7 @@ class App extends React.Component {
                 React.createElement("div", { className: "side-footer" },
                     React.createElement("span", { className: "status-dot" }),
                     "Works offline",
-                    React.createElement("small", null, "PRIVATE FARM EDITION \u00B7 1.0"))),
+                    React.createElement("small", null, "OFFLINE \u00B7 1.0"))),
             React.createElement("div", { className: "workspace" },
                 React.createElement("header", { className: "topbar" },
                     React.createElement("div", { className: "mobile-brand" },
@@ -1321,7 +1592,7 @@ class App extends React.Component {
                     React.createElement("div", { className: "batch-selector" },
                         React.createElement("span", { className: "eyebrow" }, "BATCH"),
                         React.createElement("select", { "aria-label": "Selected batch", value: b.id, onChange: e => { const v = e.target.value; if (v === '__manage') {
-                                this.switchTab('more');
+                                this.openMore('batches');
                                 return;
                             } if (v === '__new') {
                                 this.setState({ modal: { kind: 'batch' } });
@@ -1351,7 +1622,7 @@ class App extends React.Component {
                     React.createElement("footer", null,
                         "Flock Ledger \u00B7 ",
                         b.name,
-                        " \u00B7 Private, offline records"))),
+                        " \u00B7 Offline records"))),
             React.createElement("nav", { className: "bottom-nav", "aria-label": "Mobile navigation" }, tabs.map(([key, icon, label]) => React.createElement("button", { key: key, className: s.tab === key ? 'active' : '', onClick: () => this.switchTab(key) },
                 React.createElement(Icon, { name: icon }),
                 React.createElement("span", null, label)))),

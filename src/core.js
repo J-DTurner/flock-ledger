@@ -311,5 +311,43 @@
     }
     return count>n ? last : null;
   }
-  return {sum,isNum,validDate,days,addDays,today,uid,records,headcount,latestWeigh,feedInventory,summary,recentPerformance,forecast,validateState,defaultForecast,makeBatch,seededState,parseWeightList,serializeWeigh,purchaseDefaults,lotBalances,eligibleLots,productSuggestions,attentionItems,proposeForecastStart,sortWeighObservations,weighSeriesPoints,applyEvents,blockingCountRecord};
+  function normalizeWeighDraft(draft) {
+    const g = draft && draft.weighUnit === 'g';
+    const scale = v => {
+      if (v === '' || v === undefined || v === null) return v;
+      const n = Number(v);
+      return Number.isFinite(n) ? String(g ? n / 1000 : n) : v;
+    };
+    if (!draft) return {weighMode:'average', method:'measured', avgKg:'', minKg:'', maxKg:'', sampleN:'', weights:''};
+    if (draft.weighMode === 'individual') {
+      const parts = String(draft.weights || '').trim().split(/[\s,;]+/).filter(Boolean);
+      return {
+        weighMode: 'individual',
+        method: 'measured',
+        avgKg: '',
+        minKg: '',
+        maxKg: '',
+        sampleN: draft.sampleN,
+        weights: parts.map(w => {
+          const n = Number(w);
+          return Number.isFinite(n) ? String(g ? n / 1000 : n) : w;
+        }).join(', ')
+      };
+    }
+    if (draft.weighMode === 'estimate') {
+      return {weighMode:'estimate', method:'estimate', avgKg:scale(draft.avgKg), minKg:null, maxKg:null, sampleN:null, weights:''};
+    }
+    return {weighMode:'average', method:'measured', avgKg:scale(draft.avgKg), minKg:scale(draft.minKg), maxKg:scale(draft.maxKg), sampleN:draft.sampleN, weights:draft.weights};
+  }
+  function candidateBatch(batch, events, removeIds) {
+    const next = JSON.parse(JSON.stringify(batch));
+    if (removeIds && removeIds.length) next.events = next.events.filter(e => !removeIds.includes(e.id));
+    for (const e of events || []) {
+      const i = next.events.findIndex(x => x.id === e.id);
+      if (i >= 0) next.events[i] = e;
+      else next.events.push(e);
+    }
+    return next;
+  }
+  return {sum,isNum,validDate,days,addDays,today,uid,records,headcount,latestWeigh,feedInventory,summary,recentPerformance,forecast,validateState,defaultForecast,makeBatch,seededState,parseWeightList,serializeWeigh,purchaseDefaults,lotBalances,eligibleLots,productSuggestions,attentionItems,proposeForecastStart,sortWeighObservations,weighSeriesPoints,applyEvents,blockingCountRecord,normalizeWeighDraft,candidateBatch};
 });

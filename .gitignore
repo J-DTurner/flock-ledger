@@ -1,5 +1,6 @@
 # Dependencies and local build output
 node_modules/
+.venv/
 __pycache__/
 *.pyc
 build/

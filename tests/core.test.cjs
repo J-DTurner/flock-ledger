@@ -159,4 +159,46 @@ test('attentionItems come from real gaps and never invent a missed feeding day',
   assert.ok(items.some(i=>/unknown quantity/i.test(i.title)));
   assert.ok(!items.some(i=>/Feeding incomplete|Birds not fed|Zero losses/i.test(i.title+i.detail)));
 });
+test('latestWeigh measured filter still returns a sample when a newer estimate exists',()=>{
+  const d=seed();
+  add(d,'weigh',{date:'2025-02-08',avgKg:1.05,minKg:null,maxKg:null,sampleN:8,method:'measured',weights:null});
+  M.validateState(d);
+  const b=d.batches[0];
+  assert.equal(M.latestWeigh(b,'2025-02-09').method,'estimate');
+  const measured=M.latestWeigh(b,'2025-02-09',true);
+  assert.equal(measured.method,'measured');
+  eq(measured.avgKg,1.05);
+  assert.equal(measured.date,'2025-02-08');
+});
+test('Gram list 1000, 1200 serializes to 1.1 kg average through normalizeWeighDraft',()=>{
+  const normalized=M.normalizeWeighDraft({weighMode:'individual',weighUnit:'g',weights:'1000, 1200'});
+  const saved=M.serializeWeigh(normalized.weighMode,normalized);
+  const preview=M.parseWeightList(normalized.weights);
+  eq(preview.avgKg,1.1);
+  eq(saved.avgKg,1.1);
+  assert.deepEqual(saved.weights,[1,1.2]);
+  assert.equal(saved.sampleN,2);
+});
+test('Edit usage 10→20 kg: candidate remaining matches applyEvents',()=>{
+  const d=seed(),b=d.batches[0];
+  const p=add(d,'feed',{name:'Lot',phase:'grower',kg:50,cost:1500,date:'2025-02-01'});
+  const edit=add(d,'usage',{lotId:p.id,kg:10,startDate:'2025-02-01',date:'2025-02-09'});
+  const preview={...edit,kg:20};
+  const cand=M.candidateBatch(b,[preview]);
+  eq(M.lotBalances(cand,p.id).remainingAfterAll,30);
+  const next=M.applyEvents(d,b.id,[preview]);
+  eq(M.lotBalances(next.batches[0],p.id).remainingAfterAll,M.lotBalances(cand,p.id).remainingAfterAll);
+});
+test('Edit loss 2→3: candidate headcount matches replaced history',()=>{
+  const d=seed();
+  add(d,'count',{count:55,date:'2025-02-07'});
+  const loss=add(d,'loss',{count:2,date:'2025-02-08'});
+  M.validateState(d);
+  const b=d.batches[0];
+  assert.equal(M.headcount(b,'2025-02-09').count,53);
+  const cand=M.candidateBatch(b,[{...loss,count:3}]);
+  assert.equal(M.headcount(cand,'2025-02-09').count,52);
+  const next=M.applyEvents(d,b.id,[{...loss,count:3}]);
+  assert.equal(M.headcount(next.batches[0],'2025-02-09').count,52);
+});
 console.log(`\n${passed} domain tests passed.`);
