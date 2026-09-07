@@ -29,19 +29,25 @@ fictional fixture in `tests/fixture.cjs`, which is not included in the compiled 
 
 ## Daily use
 
-**Overview** shows the selected batch, live count status, latest weight, dated weight chart, spending breakdown, known feed inventory and recorded harvest output.
+Named actions open a typed task form. Choose the action, enter what changed, and save. Generic **Add record** opens an action chooser; it does not silently default to weighing or feed.
+
+**Today** is the action-first home for the selected batch and date: Use feed, Buy feed, Weigh birds, Count birds, Loss / removal, Expense, Harvest, and Note, then compact flock status, attention items from real gaps only, that day's entries, and the batch summary. Missing rows are not treated as “feeding incomplete,” “birds not fed,” or “zero losses.”
+
+**Feed** is the operational lot screen. Each purchase stays its own lot. Use feed from a lot, buy that product again, or record a budget as a purchase.
+
+**Records** is the dated history. Inventory lives on Feed, not under the record list.
 
 Use **Count birds** to record the actual live flock on a date. Losses and harvests entered after that date reduce the displayed count. Do not record a death and also reduce an earlier count for the same death.
 
-Use **Buy feed** for each dated purchase. Enter the product name, starter/grower/finisher/other phase, total kilograms and total price. Price per kg and the equivalent 50 kg sack price are calculated. Unknown historical kg can remain blank.
+Use **Buy feed** for each dated purchase. Enter the product name, stage (unknown until you choose a prior product or set it), total kilograms and total price. Price per kg and the equivalent 50 kg sack price are calculated display values; pack size is never inferred. Unknown historical kg can be marked **Quantity unknown**.
 
-For the existing finisher budget, open **Records** and use **Convert to purchase** when the purchase details are available. That replaces the budget instead of counting the same money twice.
+For an existing feed budget, open **Feed** or **Records** and use **Convert to purchase** / **Record purchase** when the purchase details are available. That replaces the budget instead of counting the same money twice.
 
-Use **Log feed used** for the amount issued/consumed from a particular purchase lot over a period. The period starts just after the start date and ends on the end date; September 7 to September 8 is one daily interval. Use consistent timing and record each period once. Quantities cannot exceed the known purchase quantity. Purchases are not automatically treated as consumption.
+Use **Use feed** for the amount issued/consumed from a particular purchase lot over a period. Opening it from a lot card already selects that lot. The period starts just after the start date and ends on the end date; September 7 to September 8 is one daily interval. Use consistent timing and record each period once. Quantities cannot exceed the known purchase quantity. Purchases are not automatically treated as consumption.
 
-Use **Weigh birds** for dated observations. Enter individual weights in kilograms, or a measured sample average and the number weighed. The app calculates mean/minimum/maximum from an individual list. A rough estimate must stay marked as an estimate. Two dated measured samples unlock observed daily gain. A largest-bird weight is not a flock average.
+Use **Weigh birds** for dated observations. Choose measured average, individual weights, or an estimate. The app calculates mean/minimum/maximum from an individual list. A rough estimate must stay marked as an estimate. Two dated measured samples unlock observed daily gain. A largest-bird weight is not a flock average.
 
-Use **Add record** for losses, other expenses, harvests and notes. Harvest entries record bird count, total live weight, total dressed weight, cash received and dressed kg kept at home. The home-use amount is not booked as cash sales.
+Use **Add record** (the chooser) for historical feed use, budgets, and the same named tasks when you are not already on the right action. Harvest entries record bird count, dressed kilograms, cash received versus home consumption, and optional live weight. The home-use amount is not booked as cash sales.
 
 For historical feed with missing purchase detail, **Historical feed already used** records the cost already consumed without adding another cash purchase. Use this only for old feed not already covered by the consumption logs. It does not deduct stock from a specific lot. Its amount must be supported by recorded feed purchases.
 
@@ -51,7 +57,7 @@ Entries can be edited or deleted. Data validation prevents deleting a feed purch
 
 Open **Forecast**. Inputs left blank are genuinely unknown; the app will not invent survivors, feed price or a starting production cost.
 
-The starting date, live-bird count, average weight and already-used operating cost must describe the same point in time. **Use latest records** copies the latest observation and only a verified count and known purchase price. **Use logged production costs** copies recorded consumption-based costs, but missing feed logs still make that number incomplete.
+The starting date, live-bird count, average weight and already-used operating cost must describe the same point in time. **Use latest records** copies one dated proposal: the latest observation (labeled measured or estimate), a verified count only if one exists on that date, production cost already used at that date, and a known lot price if one exists. It does not keep an old baseline or an unverified bird count when the start date changes. **Use logged production costs** copies recorded consumption-based costs, but missing feed logs still make that number incomplete.
 
 The starting production cost includes chick cost, feed already consumed, and other incurred batch expenses at the selected date. It does not automatically include every feed purchase or a future budget. An unopened sack is cash already paid but not yet feed used. Including the entire purchase in the starting cost and charging its modeled future use again would double-count it.
 
@@ -86,7 +92,7 @@ With a partial harvest, manually allocate the starting cost to the remaining bir
 
 ## Multiple batches, pen recovery and annual scenarios
 
-Create another flock in **Batches**. Records stay separate. Set a batch to closed when appropriate. Shared infrastructure is listed once, separate from feed/chicks. The capital-recovery batch count is editable and does not change the operating-only curve.
+Create another flock from the batch selector (**New batch**) or **More**. Records stay separate. Set a batch to closed when appropriate. Shared infrastructure is listed once, separate from feed/chicks. The capital-recovery batch count is editable and does not change the operating-only curve.
 
 The 365-day comparison repeats the selected scenario, including its operating cost and output:
 
@@ -104,7 +110,7 @@ Costs such as labor, medicine, litter, water, transport, processing, refrigerati
 
 Saved records are stored locally in the Android app. There is **no automatic phone/tablet synchronization** and no cloud backup service.
 
-Open **Backup → Export JSON backup**, then choose a local location. To transfer the ledger, move that JSON file to the other device and use **Choose JSON backup file → Validate & restore backup**. The import replaces the entire ledger on that device after confirmation; it does not merge two independently edited copies. Use one device as the primary ledger to avoid divergent edits.
+Open **More → Export JSON backup**, then choose a local location. To transfer the ledger, move that JSON file to the other device and use **Choose JSON backup file → Validate & restore backup**. The import replaces the entire ledger on that device after confirmation; it does not merge two independently edited copies. Use one device as the primary ledger to avoid divergent edits. There is no “synced” status.
 
 Keep a recent backup outside the app, especially before uninstalling or clearing app data. Storage and backup files have a 4.5 MB safety limit. A corrupt saved ledger is not silently overwritten; the recovery screen exposes the raw data and allows a valid backup to be restored.
 

@@ -1,9 +1,10 @@
 from playwright.sync_api import sync_playwright
 from pathlib import Path
-import json
+import json, os
+CHROME='/usr/bin/chromium' if os.path.exists('/usr/bin/chromium') else None
 ROOT=Path(__file__).resolve().parents[1]
 with sync_playwright() as p:
-    browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+    browser=p.chromium.launch(**({} if not CHROME else {'executable_path':CHROME}),headless=True,args=['--no-sandbox'])
     for width,height,name in [(1365,1000,'desktop'),(412,915,'phone'),(800,1100,'tablet')]:
         context=browser.new_context(viewport={'width':width,'height':height}, user_agent='FlockLedger/1 UI-test')
         page=context.new_page();errors=[]

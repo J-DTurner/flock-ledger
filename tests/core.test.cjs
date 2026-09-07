@@ -44,4 +44,119 @@ test('Historical snapshots exclude future dated feed purchases',()=>{const d=see
 test('Public first launch contains no farm records or assets',()=>{const s=M.validateState(M.seededState());assert.deepEqual(s.batches,[]);assert.deepEqual(s.settings.capital,[]);assert.equal(s.selectedBatchId,null);});
 test('Empty ledger cannot point at a nonexistent batch',()=>{const s=M.seededState();s.selectedBatchId='missing';assert.throws(()=>M.validateState(s),/Selected batch/);});
 test('First batch can be added to a blank public ledger',()=>{const s=M.seededState();const b=M.makeBatch({name:'New test flock',placementDate:'2025-01-01',initialBirds:12,chickCost:480});s.batches.push(b);s.selectedBatchId=b.id;assert.equal(M.validateState(s).batches.length,1);});
+test('parseWeightList uses comma as a bird separator and period as the decimal',()=>{
+  const parsed=M.parseWeightList('1.0, 1.1, 1.2, 1.1');
+  assert.deepEqual(parsed.weights,[1,1.1,1.2,1.1]);
+  eq(parsed.avgKg,1.1);eq(parsed.minKg,1);eq(parsed.maxKg,1.2);assert.equal(parsed.sampleN,4);
+  assert.deepEqual(M.parseWeightList('1,2').weights,[1,2]);
+  assert.deepEqual(M.parseWeightList('0.7; 0.8\n0.9').weights,[0.7,0.8,0.9]);
+  assert.ok(M.parseWeightList('1.2.3').error);
+});
+test('serializeWeigh preview aggregates match the saved individual list',()=>{
+  const saved=M.serializeWeigh('individual',{weights:'1.0, 1.1, 1.2, 1.1'});
+  const preview=M.parseWeightList('1.0, 1.1, 1.2, 1.1');
+  assert.equal(saved.method,'measured');
+  assert.deepEqual(saved.weights,preview.weights);
+  eq(saved.avgKg,preview.avgKg);eq(saved.minKg,preview.minKg);eq(saved.maxKg,preview.maxKg);
+  assert.equal(saved.sampleN,preview.sampleN);
+});
+test('Estimate draft with leftover weights text still saves as an estimate',()=>{
+  const e=M.serializeWeigh('estimate',{avgKg:'0.9',weights:'1.0, 2.0, 3.0',sampleN:'3'});
+  assert.equal(e.method,'estimate');assert.equal(e.weights,null);eq(e.avgKg,0.9);assert.equal(e.sampleN,null);
+});
+test('New purchase defaults to unknown phase; a prior product copies phase only',()=>{
+  assert.equal(M.purchaseDefaults(null).phase,'unknown');
+  assert.equal(M.purchaseDefaults({}).phase,'unknown');
+  const copied=M.purchaseDefaults({name:'Grower pellet',phase:'grower',kg:50,cost:1500});
+  assert.equal(copied.name,'Grower pellet');assert.equal(copied.phase,'grower');
+  assert.equal(copied.kg,undefined);assert.equal(copied.cost,undefined);
+});
+test('eligibleLots excludes exhausted, unknown-kg and future lots; edit keeps the current lot',()=>{
+  const d=seed(),b=d.batches[0];
+  const usable=add(d,'feed',{name:'Usable',phase:'grower',kg:40,cost:1200,date:'2025-02-08'});
+  const exhausted=add(d,'feed',{name:'Gone',phase:'finisher',kg:10,cost:300,date:'2025-02-07'});
+  add(d,'usage',{lotId:exhausted.id,kg:10,startDate:'2025-02-07',date:'2025-02-08'});
+  add(d,'feed',{name:'Later',phase:'finisher',kg:20,cost:600,date:'2025-02-20'});
+  const ids=M.eligibleLots(b,'2025-02-09').map(p=>p.id);
+  assert.ok(ids.includes(usable.id));
+  assert.ok(!ids.includes(exhausted.id));
+  assert.ok(!ids.includes('fixture-prior-feed'));
+  assert.ok(!ids.includes(b.events.find(e=>e.name==='Later').id));
+  const edit=b.events.find(e=>e.lotId===exhausted.id);
+  const editing=M.eligibleLots(b,'2025-02-09',edit).map(p=>p.id);
+  assert.ok(editing.includes(exhausted.id));
+  const allowance=M.eligibleLots(b,'2025-02-09',edit).find(p=>p.id===exhausted.id).allowance;
+  eq(allowance,10);
+});
+test('lotBalances distinguishes as-of remaining from remaining after all usage',()=>{
+  const d=seed(),p=add(d,'feed',{name:'Lot',phase:'grower',kg:100,cost:3000,date:'2025-02-01'});
+  add(d,'usage',{lotId:p.id,kg:20,startDate:'2025-02-01',date:'2025-02-05'});
+  add(d,'usage',{lotId:p.id,kg:30,startDate:'2025-02-06',date:'2025-02-09'});
+  const bal=M.lotBalances(d.batches[0],p.id,'2025-02-05');
+  eq(bal.balanceAtDate,80);eq(bal.remainingAfterAll,50);
+});
+test('Multi-lot usage commit is all-or-nothing and stays ordinary usage events',()=>{
+  const d=seed(),b=d.batches[0];
+  const a=add(d,'feed',{name:'A',phase:'grower',kg:40,cost:1200,date:'2025-02-08'});
+  const c=add(d,'feed',{name:'B',phase:'grower',kg:10,cost:300,date:'2025-02-08'});
+  const before=JSON.parse(JSON.stringify(d));
+  assert.throws(()=>M.applyEvents(d,b.id,[
+    event('usage',{lotId:a.id,kg:10,startDate:'2025-02-08',date:'2025-02-09'}),
+    event('usage',{lotId:c.id,kg:11,startDate:'2025-02-08',date:'2025-02-09'})
+  ]),/exceeds kilograms/);
+  assert.deepEqual(d,before);
+  const next=M.applyEvents(d,b.id,[
+    event('usage',{lotId:a.id,kg:10,startDate:'2025-02-08',date:'2025-02-09'}),
+    event('usage',{lotId:c.id,kg:5,startDate:'2025-02-08',date:'2025-02-09'})
+  ]);
+  const added=next.batches[0].events.filter(e=>e.type==='usage');
+  assert.equal(added.length,2);
+  assert.ok(added.every(e=>e.type==='usage'));
+});
+test('proposeForecastStart does not keep an old baseline or unverified bird count',()=>{
+  const d=seed(),b=d.batches[0];
+  b.forecast.baselineCost=9999;b.forecast.birds=99;b.forecast.startDate='2025-01-20';
+  add(d,'weigh',{date:'2025-02-09',avgKg:1.1,minKg:null,maxKg:null,sampleN:8,method:'measured',weights:null});
+  const unverified=M.proposeForecastStart(b);
+  assert.equal(unverified.startDate,'2025-02-09');
+  assert.equal(unverified.birds,null);
+  assert.equal(unverified.birdsProvenance,'unverified');
+  eq(unverified.baselineCost,M.summary(b,'2025-02-09').usedOperating);
+  assert.notEqual(unverified.baselineCost,9999);
+  add(d,'count',{date:'2025-02-09',count:47});
+  const verified=M.proposeForecastStart(b);
+  assert.equal(verified.birds,47);
+  assert.equal(verified.weightMethod,'measured');
+});
+test('Optional settings.ui is accepted; older backups without it still validate',()=>{
+  const old=seed();
+  assert.equal(old.settings.ui,undefined);
+  M.validateState(old);
+  old.settings.ui={packKg:25,weighUnit:'kg',lastLotId:null,drafts:{'feed|fixture-batch|2025-02-09':{name:'Draft pellet',phase:'unknown',kg:'',cost:''}}};
+  M.validateState(old);
+  assert.equal(old.batches[0].events.some(e=>e.type==='draft'),false);
+});
+test('Weigh chart points are sorted by date then createdAt, not insertion order',()=>{
+  const d=seed(),b=d.batches[0];
+  add(d,'weigh',{date:'2025-02-09',createdAt:'2025-02-09T12:00:00Z',avgKg:1.2,minKg:null,maxKg:null,sampleN:4,method:'measured',weights:null});
+  add(d,'weigh',{date:'2025-02-03',createdAt:'2025-02-09T13:00:00Z',avgKg:0.8,minKg:null,maxKg:null,sampleN:4,method:'measured',weights:null});
+  const pts=M.weighSeriesPoints(b).filter(p=>p.method==='measured');
+  assert.deepEqual(pts.map(p=>p.date),['2025-02-03','2025-02-09']);
+  assert.ok(pts[0].x<pts[1].x);
+});
+test('productSuggestions are unique name+phase pairs from recent purchases',()=>{
+  const d=seed(),b=d.batches[0];
+  add(d,'feed',{name:'Grower pellet',phase:'grower',kg:50,cost:1500,date:'2025-02-01'});
+  add(d,'feed',{name:'Grower pellet',phase:'grower',kg:25,cost:800,date:'2025-02-08'});
+  add(d,'feed',{name:'Grower pellet',phase:'finisher',kg:25,cost:900,date:'2025-02-09'});
+  const suggestions=M.productSuggestions(b);
+  assert.equal(suggestions.filter(p=>p.name==='Grower pellet').length,2);
+  assert.ok(suggestions.some(p=>p.name==='Grower pellet'&&p.phase==='finisher'));
+});
+test('attentionItems come from real gaps and never invent a missed feeding day',()=>{
+  const d=seed(),items=M.attentionItems(d.batches[0],'2025-02-09');
+  assert.ok(items.some(i=>/live count/i.test(i.title)));
+  assert.ok(items.some(i=>/unknown quantity/i.test(i.title)));
+  assert.ok(!items.some(i=>/Feeding incomplete|Birds not fed|Zero losses/i.test(i.title+i.detail)));
+});
 console.log(`\n${passed} domain tests passed.`);

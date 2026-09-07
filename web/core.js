@@ -159,6 +159,25 @@
     if(!s.settings||!Array.isArray(s.settings.capital)||s.settings.capital.length>1000)fail('Invalid capital settings.');
     integer(s.settings.recoveryBatches,'capital recovery batches',1,1000);
     for(const a of s.settings.capital){text(a.id,'capital id',100);text(a.name,'capital description',180);num(a.cost,'capital amount');date(a.date,'capital date',true);}
+    if(s.settings.ui!==undefined && s.settings.ui!==null){
+      const ui=s.settings.ui;
+      if(typeof ui!=='object'||Array.isArray(ui))fail('Invalid UI settings.');
+      const keys=Object.keys(ui);
+      if(keys.length>30)fail('Invalid UI settings.');
+      if(ui.packKg!==undefined&&ui.packKg!==null)num(ui.packKg,'pack kilograms',0.001,1e5);
+      if(ui.weighUnit!==undefined&&ui.weighUnit!==null&&!['kg','g'].includes(ui.weighUnit))fail('Invalid weigh unit.');
+      if(ui.lastLotId!==undefined&&ui.lastLotId!==null)text(ui.lastLotId,'last lot',100);
+      if(ui.drafts!==undefined&&ui.drafts!==null){
+        if(typeof ui.drafts!=='object'||Array.isArray(ui.drafts))fail('Invalid drafts.');
+        const dkeys=Object.keys(ui.drafts);
+        if(dkeys.length>80)fail('Too many drafts.');
+        for(const k of dkeys){
+          text(k,'draft key',240);
+          const draft=ui.drafts[k];
+          if(typeof draft!=='object'||draft===null||Array.isArray(draft))fail('Invalid draft.');
+        }
+      }
+    }
     if(s.batches.length ? !s.batches.some(b=>b.id===s.selectedBatchId) : s.selectedBatchId!==null)fail('Selected batch is missing.');
     return s;
   }
@@ -169,5 +188,128 @@
     return {app:'FlockLedger',schemaVersion:1,selectedBatchId:null,
       settings:{recoveryBatches:7,capital:[]},batches:[]};
   }
-  return {sum,isNum,validDate,days,addDays,today,uid,records,headcount,latestWeigh,feedInventory,summary,recentPerformance,forecast,validateState,defaultForecast,makeBatch,seededState};
+  function parseWeightList(text) {
+    if (typeof text !== 'string' || !text.trim()) return {weights:[],error:null,avgKg:null,minKg:null,maxKg:null,sampleN:0};
+    const parts = text.trim().split(/[\s,;]+/).filter(Boolean);
+    const weights = [];
+    for (const part of parts) {
+      if (!/^\d+(\.\d+)?$/.test(part) && !/^\.\d+$/.test(part)) return {weights:[],error:'Enter individual weights as kilograms separated by commas, spaces, or new lines. Use a period for decimals.',avgKg:null,minKg:null,maxKg:null,sampleN:0};
+      const n = Number(part);
+      if (!Number.isFinite(n) || n <= 0) return {weights:[],error:'Each individual weight must be a positive number of kilograms.',avgKg:null,minKg:null,maxKg:null,sampleN:0};
+      weights.push(n);
+    }
+    return {weights,error:null,avgKg:sum(weights)/weights.length,minKg:Math.min(...weights),maxKg:Math.max(...weights),sampleN:weights.length};
+  }
+  function serializeWeigh(mode, draft) {
+    const n = (v, optional) => v===''||v===undefined||v===null ? (optional ? null : NaN) : Number(v);
+    if (mode === 'estimate') return {method:'estimate',weights:null,avgKg:n(draft.avgKg),minKg:null,maxKg:null,sampleN:null};
+    if (mode === 'individual') {
+      const parsed = parseWeightList(draft.weights);
+      if (parsed.error) throw new Error(parsed.error);
+      if (!parsed.weights.length) throw new Error('Enter at least one individual weight.');
+      return {method:'measured',weights:parsed.weights,avgKg:parsed.avgKg,minKg:parsed.minKg,maxKg:parsed.maxKg,sampleN:parsed.sampleN};
+    }
+    return {method:'measured',weights:null,avgKg:n(draft.avgKg),minKg:n(draft.minKg,true),maxKg:n(draft.maxKg,true),sampleN:n(draft.sampleN,true)};
+  }
+  function purchaseDefaults(product) {
+    if (!product || typeof product !== 'object') return {name:'',phase:'unknown'};
+    return {name:product.name||'',phase:product.phase||'unknown'};
+  }
+  function lotUsed(batch, lotId, asOfDate, excludeId) {
+    return sum(batch.events.filter(e => e.type==='usage' && e.lotId===lotId && e.id!==excludeId && (!asOfDate || !e.date || e.date<=asOfDate)).map(e => e.kg));
+  }
+  function lotBalances(batch, lotId, asOfDate) {
+    const p = batch.events.find(e => e.type==='feed' && e.id===lotId);
+    if (!p) return null;
+    const usedAsOf = lotUsed(batch, lotId, asOfDate);
+    const usedAll = lotUsed(batch, lotId);
+    return {
+      lotId, bought:p.kg, asOfDate, usedAsOf, usedAll,
+      balanceAtDate: isNum(p.kg) ? p.kg - usedAsOf : null,
+      remainingAfterAll: isNum(p.kg) ? p.kg - usedAll : null
+    };
+  }
+  function eligibleLots(batch, endDate, edit) {
+    const excludeId = edit && edit.id;
+    return batch.events.filter(p => {
+      if (p.type!=='feed' || p.kg===null) return false;
+      if (p.date && endDate && p.date > endDate) return false;
+      const remaining = p.kg - lotUsed(batch, p.id, null, excludeId);
+      if (edit && edit.lotId===p.id) return true;
+      return remaining > 0.00001;
+    }).map(p => {
+      const remaining = p.kg - lotUsed(batch, p.id, null, excludeId);
+      const asOf = endDate ? p.kg - lotUsed(batch, p.id, endDate, excludeId) : remaining;
+      return {...p, remaining, asOfRemaining:asOf, allowance:remaining};
+    });
+  }
+  function productSuggestions(batch) {
+    const seen = new Set(), out = [];
+    const feeds = batch.events.filter(e => e.type==='feed').sort((a,b) => (b.date||'').localeCompare(a.date||'') || (b.createdAt||'').localeCompare(a.createdAt||''));
+    for (const p of feeds) {
+      const name = (p.name||'').trim();
+      if (!name) continue;
+      const key = name.toLowerCase()+'|'+p.phase;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({name, phase:p.phase, lastDate:p.date, lastCost:p.cost, lastKg:p.kg});
+    }
+    return out;
+  }
+  function attentionItems(batch, date = today()) {
+    const items = [], h = headcount(batch, date), s = summary(batch, date);
+    const measured = records(batch,'weigh',date).filter(e => e.method==='measured' && e.date);
+    if (!h.confirmed) items.push({key:'count',title:'No live count recorded',detail:'',action:'Count birds',actionType:'count'});
+    const unknownQty = records(batch,'feed',date).filter(p => p.kg===null);
+    if (unknownQty.length===1) items.push({key:'unknown-qty',title:'One purchase has an unknown quantity',detail:'',action:'Review purchase',actionType:'feed',eventId:unknownQty[0].id});
+    if (unknownQty.length>1) items.push({key:'unknown-qty',title:unknownQty.length+' purchases have an unknown quantity',detail:'',action:'Review purchases',actionType:'records'});
+    if (measured.length===1) items.push({key:'weigh',title:'One measured weighing recorded',detail:'Another dated sample is needed for observed daily gain.',action:'Weigh birds',actionType:'weigh'});
+    if (s.inventoryIncomplete && !unknownQty.length) items.push({key:'stock',title:'Recorded stock is incomplete',detail:'',action:'Review purchases',actionType:'records'});
+    return items;
+  }
+  function proposeForecastStart(batch) {
+    const w = latestWeigh(batch);
+    if (!w) return {startDate:null,weightKg:null,weightMethod:null,birds:null,birdsProvenance:'no-weigh',baselineCost:null,feedPrice:null,incomplete:true};
+    const startDate = w.date, h = headcount(batch, startDate), s = summary(batch, startDate);
+    const inv = feedInventory(batch, startDate).filter(p => p.price!==null).sort((a,b) => (a.date||'').localeCompare(b.date||'') || (a.createdAt||'').localeCompare(b.createdAt||''));
+    return {
+      startDate, weightKg:w.avgKg, weightMethod:w.method,
+      birds: h.confirmed ? h.count : null,
+      birdsProvenance: h.confirmed ? 'verified-count' : 'unverified',
+      baselineCost: s.usedOperating,
+      baselineIncomplete: s.inventoryIncomplete,
+      feedPrice: inv.length ? inv[inv.length-1].price : null,
+      feedPriceDate: inv.length ? inv[inv.length-1].date : null,
+      incomplete: !h.confirmed || s.inventoryIncomplete || !inv.length
+    };
+  }
+  function sortWeighObservations(events) {
+    return events.filter(e => e.type==='weigh' && e.date).slice().sort((a,b) => a.date.localeCompare(b.date) || (a.createdAt||'').localeCompare(b.createdAt||''));
+  }
+  function weighSeriesPoints(batch) {
+    return sortWeighObservations(batch.events).map(w => ({date:w.date,createdAt:w.createdAt,method:w.method,avgKg:w.avgKg,x:days(batch.placementDate,w.date),y:w.avgKg}));
+  }
+  function applyEvents(state, batchId, events, removeIds) {
+    const next = JSON.parse(JSON.stringify(state));
+    const b = next.batches.find(x => x.id===batchId);
+    if (!b) throw new Error('The batch for this entry is no longer in the ledger.');
+    if (removeIds && removeIds.length) b.events = b.events.filter(e => !removeIds.includes(e.id));
+    for (const e of events) {
+      const i = b.events.findIndex(x => x.id===e.id);
+      if (i>=0) b.events[i]=e; else b.events.push(e);
+    }
+    return validateState(next);
+  }
+  function blockingCountRecord(batch, count, date) {
+    const sorted = batch.events.filter(e => ['count','loss','harvest'].includes(e.type) && e.date && e.date<=date).sort((a,b) => a.date.localeCompare(b.date) || (a.createdAt||'').localeCompare(b.createdAt||''));
+    let n = batch.initialBirds, last = {id:null,type:'placement',count:batch.initialBirds,date:batch.placementDate};
+    for (const e of sorted) {
+      if (e.type==='count') { if (e.count>n) return e; n=e.count; }
+      else n -= e.count;
+      last = e;
+      if (n<0) return e;
+    }
+    return count>n ? last : null;
+  }
+  return {sum,isNum,validDate,days,addDays,today,uid,records,headcount,latestWeigh,feedInventory,summary,recentPerformance,forecast,validateState,defaultForecast,makeBatch,seededState,parseWeightList,serializeWeigh,purchaseDefaults,lotBalances,eligibleLots,productSuggestions,attentionItems,proposeForecastStart,sortWeighObservations,weighSeriesPoints,applyEvents,blockingCountRecord};
 });

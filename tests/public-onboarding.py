@@ -1,7 +1,9 @@
 """Empty-public-startup workflows; simulated native persistence, no Android runtime."""
 from pathlib import Path
 import json, subprocess
+import os
 from playwright.sync_api import sync_playwright
+CHROME='/usr/bin/chromium' if os.path.exists('/usr/bin/chromium') else None
 ROOT=Path(__file__).resolve().parents[1]
 HTML=(ROOT/'web/index.html').read_text()
 FIXTURE=subprocess.check_output(['node',str(ROOT/'tests/fixture.cjs')],text=True)
@@ -10,7 +12,7 @@ def init(page):
     page.set_content(HTML)
     page.on('dialog',lambda d:d.accept())
 with sync_playwright() as p:
-    browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+    browser=p.chromium.launch(**({} if not CHROME else {'executable_path':CHROME}),headless=True,args=['--no-sandbox'])
     ctx=browser.new_context(viewport={'width':412,'height':915},user_agent='FlockLedger/1 UI-test')
     page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)));init(page)
     page.get_by_label('Batch name',exact=True).fill('New synthetic flock')
@@ -20,7 +22,7 @@ with sync_playwright() as p:
     page.get_by_role('button',name='Save batch',exact=True).click()
     state=json.loads(page.evaluate('window.__ledger'))
     assert len(state['batches'])==1 and state['batches'][0]['initialBirds']==12 and state['batches'][0]['events']==[]
-    assert page.get_by_role('button',name='Count birds',exact=True).count()==1
+    assert page.get_by_role('button',name='Count birds',exact=True).count()>=1
     print('PASS empty first launch creates a first batch and opens Overview')
     blank=ctx.new_page();init(blank)
     blank.get_by_role('button',name='Restore an existing backup',exact=True).click()
@@ -31,7 +33,7 @@ with sync_playwright() as p:
     blank.get_by_role('button',name='Validate & restore backup',exact=True).click()
     restored=json.loads(blank.evaluate('window.__ledger'))
     assert restored==json.loads(FIXTURE)
-    blank.get_by_role('button',name='Overview',exact=True).click()
+    blank.get_by_role('button',name='Today',exact=True).click()
     assert blank.get_by_text('Not counted',exact=True).count()==1
     assert not errors,errors
     print('PASS existing schema-version-1 ledger restores from public onboarding')
