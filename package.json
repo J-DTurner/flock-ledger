@@ -1,0 +1,14 @@
+{
+  "name": "flock-ledger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline broiler ledger and scenario planner",
+  "scripts": {
+    "build": "node tools/build-web.cjs",
+    "test": "node tests/core.test.cjs && node tests/publisher.test.cjs",
+    "publish:github": "node tools/publish-github.cjs"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  }
+}

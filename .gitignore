@@ -1,0 +1,32 @@
+# Dependencies and local build output
+node_modules/
+__pycache__/
+*.pyc
+build/
+android/.gradle/
+android/local.properties
+android/app/build/
+*.apk
+*.aab
+*.bundle
+# Credentials and signing material
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+password.txt
+*PRIVATE-Signing*
+*private-signing*/
+# Private farm exports and editor metadata
+backups/
+private-data/
+flock-ledger-backup*.json
+Flock-Ledger-backup*.json
+.DS_Store
+.idea/
+.vscode/

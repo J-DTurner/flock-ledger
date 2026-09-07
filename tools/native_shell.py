@@ -1,0 +1,115 @@
+"""Emit the reviewed offline shell's DEX instruction stream.
+Java equivalents live in android/app/src/main/java/ph/flockledger/app/.
+"""
+from dexbuild import Dex
+from pathlib import Path
+import json
+A='Lph/flockledger/app/MainActivity;';C='Lph/flockledger/app/LocalChrome;';L='Lph/flockledger/app/LocalClient;'
+ACT='Landroid/app/Activity;';CTX='Landroid/content/Context;';B='Landroid/os/Bundle;'
+WV='Landroid/webkit/WebView;';WS='Landroid/webkit/WebSettings;';WC='Landroid/webkit/WebChromeClient;';WVC='Landroid/webkit/WebViewClient;';JP='Landroid/webkit/JsPromptResult;'
+S='Ljava/lang/String;';OBJ='Ljava/lang/Object;';SP='Landroid/content/SharedPreferences;';ED='Landroid/content/SharedPreferences$Editor;'
+I='Landroid/content/Intent;';J='Lorg/json/JSONObject;';WIN='Landroid/view/Window;';VIEW='Landroid/view/View;';CB='Landroid/webkit/ValueCallback;'
+CR='Landroid/content/ContentResolver;';URI='Landroid/net/Uri;';IN='Ljava/io/InputStream;';OUT='Ljava/io/OutputStream;';BAOS='Ljava/io/ByteArrayOutputStream;'
+TOAST='Landroid/widget/Toast;';CHAR='Ljava/lang/CharSequence;';EX='Ljava/lang/IllegalArgumentException;'
+LOCAL='file:///android_asset/index.html'
+def make_dex():
+ d=Dex();d.cls(A,ACT);d.cls(C,WC);d.cls(L,WVC);web=d.fld(A,'web',WV);owner=d.fld(C,'owner',A,0x11)
+ for cls,sup in [(A,ACT),(L,WVC)]:
+  c=d.define(cls,'<init>','V',[],0x10001,1,1);c.call('direct',sup,'<init>','V',[],[0]).ret()
+ c=d.define(C,'<init>','V',[A],0x10001,2,2);c.call('direct',WC,'<init>','V',[],[0]).field(False,1,0,owner).ret()
+ c=d.define(C,'onJsPrompt','Z',[WV,S,S,S,JP],1,16,6)
+ c.field(True,0,10,owner).call('virtual',A,'handlePrompt','Z',[S,S,S,JP],[0,12,13,14,15]).result(0).ret(0)
+ c=d.define(L,'shouldOverrideUrlLoading','Z',[WV,S],1,4,3);c.true()
+ c=d.define(A,'prefs',SP,[],1,4,1)
+ c.string(0,'flock-ledger').const(1,0).call('virtual',CTX,'getSharedPreferences',SP,[S,'I'],[3,0,1]).result(0,True).ret(0,True)
+ c=d.define(A,'notice','V',[S],1,4,2)
+ c.const(0,1).call('static',TOAST,'makeText',TOAST,[CTX,CHAR,'I'],[2,3,0]).result(0,True).call('virtual',TOAST,'show','V',[],[0]).ret()
+ c=d.define(A,'onCreate','V',[B],4,10,2)
+ c.call('super',ACT,'onCreate','V',[B],[8,9])
+ c.call('virtual',ACT,'getWindow',WIN,[],[8]).result(0,True).const(1,0xff37563e).call('virtual',WIN,'setStatusBarColor','V',['I'],[0,1])
+ c.const(1,0xff25382c).call('virtual',WIN,'setNavigationBarColor','V',['I'],[0,1])
+ c.new(0,WV).call('direct',WV,'<init>','V',[CTX],[0,8]).field(False,0,8,web)
+ c.const(1,0xfff5f5ef).call('virtual',WV,'setBackgroundColor','V',['I'],[0,1]).call('virtual',WV,'getSettings',WS,[],[0]).result(1,True)
+ c.const(2,1)
+ for n in ['setJavaScriptEnabled','setDomStorageEnabled']:c.call('virtual',WS,n,'V',['Z'],[1,2])
+ c.const(2,0)
+ for n in ['setAllowFileAccess','setAllowContentAccess','setAllowFileAccessFromFileURLs','setAllowUniversalAccessFromFileURLs']:c.call('virtual',WS,n,'V',['Z'],[1,2])
+ c.const(2,1).call('virtual',WS,'setMixedContentMode','V',['I'],[1,2]) # MIXED_CONTENT_NEVER_ALLOW = 1
+ c.call('virtual',WS,'getUserAgentString',S,[],[1]).result(2,True).string(3,' FlockLedger/1').call('virtual',S,'concat',S,[S],[2,3]).result(2,True).call('virtual',WS,'setUserAgentString','V',[S],[1,2])
+ c.new(1,C).call('direct',C,'<init>','V',[A],[1,8]).call('virtual',WV,'setWebChromeClient','V',[WC],[0,1])
+ c.new(1,L).call('direct',L,'<init>','V',[],[1]).call('virtual',WV,'setWebViewClient','V',[WVC],[0,1])
+ c.call('virtual',ACT,'setContentView','V',[VIEW],[8,0]).string(1,LOCAL).call('virtual',WV,'loadUrl','V',[S],[0,1]).ret()
+ c=d.define(A,'handlePrompt','Z',[S,S,S,JP],1,16,5)
+ # p0=this=11, p1=url=12, p2=message=13, p3=value=14, p4=result=15
+ c.string(0,LOCAL).call('virtual',S,'equals','Z',[OBJ],[0,12]).result(1).zero('eq',1,'reject').label('try-start')
+ def match(text,label):
+  c.string(0,text).call('virtual',S,'equals','Z',[OBJ],[0,13]).result(1).zero('eq',1,label)
+ def confirm(reg=0):c.call('virtual',JP,'confirm','V',[S],[15,reg]).true()
+ match('flock:load','save')
+ c.call('virtual',A,'prefs',SP,[],[11]).result(0,True).string(1,'ledger').string(2,'').call('interface',SP,'getString',S,[S,S],[0,1,2]).result(0,True);confirm()
+ c.label('save');match('flock:save','export')
+ c.call('virtual',S,'length','I',[],[14]).result(0).const(1,4500000).branch('gt',0,1,'large')
+ c.new(0,J).call('direct',J,'<init>','V',[S],[0,14]).string(1,'app').call('virtual',J,'getString',S,[S],[0,1]).result(0,True)
+ c.string(1,'FlockLedger').call('virtual',S,'equals','Z',[OBJ],[1,0]).result(0).zero('eq',0,'invalid')
+ c.call('virtual',A,'prefs',SP,[],[11]).result(0,True).call('interface',SP,'edit',ED,[],[0]).result(2,True)
+ c.string(3,'ledger').string(4,'').call('interface',SP,'getString',S,[S,S],[0,3,4]).result(3,True)
+ c.string(1,'previous').call('interface',ED,'putString',ED,[S,S],[2,1,3]).result(2,True)
+ c.string(1,'ledger').call('interface',ED,'putString',ED,[S,S],[2,1,14]).result(2,True).call('interface',ED,'commit','Z',[],[2]).result(0).zero('eq',0,'storage-error')
+ c.string(0,'ok');confirm()
+ c.label('large').string(0,'too-large');confirm()
+ c.label('invalid').string(0,'invalid');confirm()
+ c.label('export');match('flock:export','import')
+ c.new(0,J).call('direct',J,'<init>','V',[S],[0,14]).string(1,'text').call('virtual',J,'getString',S,[S],[0,1]).result(1,True)
+ c.call('virtual',A,'prefs',SP,[],[11]).result(2,True).call('interface',SP,'edit',ED,[],[2]).result(2,True).string(3,'pending-export')
+ c.call('interface',ED,'putString',ED,[S,S],[2,3,1]).result(2,True).call('interface',ED,'commit','Z',[],[2]).result(2).zero('eq',2,'storage-error')
+ c.new(2,I).string(3,'android.intent.action.CREATE_DOCUMENT').call('direct',I,'<init>','V',[S],[2,3])
+ c.string(3,'android.intent.category.OPENABLE').call('virtual',I,'addCategory',I,[S],[2,3])
+ c.string(1,'mime').call('virtual',J,'getString',S,[S],[0,1]).result(3,True).call('virtual',I,'setType',I,[S],[2,3])
+ c.string(1,'name').call('virtual',J,'getString',S,[S],[0,1]).result(3,True).string(1,'android.intent.extra.TITLE').call('virtual',I,'putExtra',I,[S,S],[2,1,3])
+ c.const(1,101).call('virtual',ACT,'startActivityForResult','V',[I,'I'],[11,2,1]).string(0,'pending');confirm()
+ c.label('import');match('flock:import','take-import')
+ c.new(2,I).string(3,'android.intent.action.OPEN_DOCUMENT').call('direct',I,'<init>','V',[S],[2,3])
+ c.string(3,'android.intent.category.OPENABLE').call('virtual',I,'addCategory',I,[S],[2,3]).string(3,'application/json').call('virtual',I,'setType',I,[S],[2,3])
+ c.const(1,102).call('virtual',ACT,'startActivityForResult','V',[I,'I'],[11,2,1]).string(0,'pending');confirm()
+ c.label('take-import');match('flock:take-import','exit')
+ c.call('virtual',A,'prefs',SP,[],[11]).result(0,True).string(1,'pending-import').string(2,'').call('interface',SP,'getString',S,[S,S],[0,1,2]).result(2,True)
+ c.call('interface',SP,'edit',ED,[],[0]).result(0,True).call('interface',ED,'remove',ED,[S],[0,1]).result(0,True).call('interface',ED,'apply','V',[],[0]);confirm(2)
+ c.label('exit');match('flock:exit','reject')
+ c.string(0,'ok').call('virtual',JP,'confirm','V',[S],[15,0]).call('virtual',ACT,'finish','V',[],[11]).true()
+ c.label('storage-error').string(0,'storage-error');confirm()
+ c.label('try-end').label('reject').call('virtual',JP,'cancel','V',[],[15]).true()
+ c.label('handler').put('exception',0).string(0,'Unable to complete the operation. Try a local file location.');confirm()
+ c.trycatch('try-start','try-end','handler')
+ c=d.define(A,'onActivityResult','V',['I','I',I],4,12,4)
+ # p0=8, request=9, result=10, data=11
+ c.call('super',ACT,'onActivityResult','V',['I','I',I],[8,9,10,11]).const(0,-1).branch('ne',10,0,'end').zero('eq',11,'end').label('start')
+ c.const(0,101).branch('ne',9,0,'import')
+ c.call('virtual',A,'prefs',SP,[],[8]).result(0,True).string(1,'pending-export').string(2,'').call('interface',SP,'getString',S,[S,S],[0,1,2]).result(3,True)
+ c.call('virtual',CTX,'getContentResolver',CR,[],[8]).result(0,True).call('virtual',I,'getData',URI,[],[11]).result(1,True).string(2,'wt').call('virtual',CR,'openOutputStream',OUT,[URI,S],[0,1,2]).result(0,True)
+ c.string(1,'UTF-8').call('virtual',S,'getBytes','[B',[S],[3,1]).result(1,True).call('virtual',OUT,'write','V',['[B'],[0,1]).call('virtual',OUT,'close','V',[],[0])
+ c.call('virtual',A,'prefs',SP,[],[8]).result(0,True).call('interface',SP,'edit',ED,[],[0]).result(0,True).string(1,'pending-export').call('interface',ED,'remove',ED,[S],[0,1]).result(0,True).call('interface',ED,'apply','V',[],[0])
+ c.string(0,'Backup or CSV saved to the chosen location.').call('virtual',A,'notice','V',[S],[8,0]).goto('end')
+ c.label('import').const(0,102).branch('ne',9,0,'end')
+ c.call('virtual',CTX,'getContentResolver',CR,[],[8]).result(0,True).call('virtual',I,'getData',URI,[],[11]).result(1,True).call('virtual',CR,'openInputStream',IN,[URI],[0,1]).result(0,True)
+ c.call('static',A,'readText',S,[IN],[0]).result(1,True).call('virtual',IN,'close','V',[],[0])
+ c.call('virtual',A,'prefs',SP,[],[8]).result(0,True).call('interface',SP,'edit',ED,[],[0]).result(0,True).string(2,'pending-import').call('interface',ED,'putString',ED,[S,S],[0,2,1]).result(0,True).call('interface',ED,'commit','Z',[],[0]).result(0).zero('eq',0,'import-error')
+ c.string(0,'window.checkPendingImport&&window.checkPendingImport();')
+ c.field(True,1,8,web).const(2,0).call('virtual',WV,'evaluateJavascript','V',[S,CB],[1,0,2]).goto('end')
+ c.label('import-error').new(0,EX).string(1,'Unable to retain imported text').call('direct',EX,'<init>','V',[S],[0,1]).put('throw',0)
+ c.label('try-end').label('handler').put('exception',0).string(0,'File could not be read or saved. Choose a local location and a backup under 4.5 MB.').call('virtual',A,'notice','V',[S],[8,0])
+ c.label('end').ret().trycatch('start','try-end','handler')
+ c=d.define(A,'readText',S,[IN],9,8,1)
+ c.new(0,BAOS).call('direct',BAOS,'<init>','V',[],[0]).const(1,8192).put('newarray',1,1,'[B').const(3,0)
+ c.label('start').label('loop').call('virtual',IN,'read','I',['[B'],[7,1]).result(2).const(6,-1).branch('eq',2,6,'done')
+ c.call('virtual',BAOS,'write','V',['[B','I','I'],[0,1,3,2]).call('virtual',BAOS,'size','I',[],[0]).result(4).const(5,4500000).branch('gt',4,5,'large').goto('loop')
+ c.label('done').string(1,'UTF-8').call('virtual',BAOS,'toString',S,[S],[0,1]).result(0,True).ret(0,True)
+ c.label('large').new(0,EX).string(1,'Backup too large').call('direct',EX,'<init>','V',[S],[0,1]).put('throw',0)
+ c.label('try-end').label('handler').put('exception',0).call('virtual',IN,'close','V',[],[7]).put('throw',0).trycatch('start','try-end','handler')
+ c=d.define(A,'onBackPressed','V',[],1,4,1)
+ c.field(True,0,3,web).string(1,"if(!window.nativeBack||!window.nativeBack())window.prompt('flock:exit','');").const(2,0).call('virtual',WV,'evaluateJavascript','V',[S,CB],[0,1,2]).ret()
+ raw=d.build();return raw,d
+if __name__=='__main__':
+ root=Path(__file__).resolve().parents[1];(root/'build').mkdir(exist_ok=True)
+ raw,d=make_dex();(root/'build/classes.dex').write_bytes(raw)
+ (root/'build/dex-listing.json').write_text(json.dumps(d.disassembly,indent=2))
+ print('DEX emitted:',len(raw),'bytes;',len(d.classes),'classes;',len(d.methods),'defined methods')

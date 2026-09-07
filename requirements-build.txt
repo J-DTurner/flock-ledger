@@ -1,0 +1,4 @@
+cryptography>=44,<47
+Pillow>=11,<13
+# Optional UI tests only:
+playwright>=1.49,<2
