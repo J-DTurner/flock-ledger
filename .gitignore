@@ -30,3 +30,6 @@ Flock-Ledger-backup*.json
 .DS_Store
 .idea/
 .vscode/
+.cursor/
+.selector/
+package-lock.json
